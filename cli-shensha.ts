@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { computeShensha, SUPPORTED_SHENSHA, type BaziInput, type Gan, type Zhi } from "./shensha.ts";
-import type { Sex } from "./consts.ts";
+import { ALL_SHENSHA, type Sex } from "./consts.ts";
 
 const DATA_DIR = new URL("./bazi_data/", import.meta.url).pathname.replace(/^\//, "");
 const PILLAR_KEYS = ["year", "month", "day", "hour"] as const;
@@ -52,7 +52,7 @@ function* iterSamples(): Generator<Sample> {
         month: { gan: mg as Gan, zhi: mz as Zhi },
         day:   { gan: dg as Gan, zhi: dz as Zhi },
         hour:  { gan: hg as Gan, zhi: hz as Zhi },
-        sex,
+        sex: sex!,
       },
       truth: (truth as unknown[]).slice(0, 4).map(v => Array.isArray(v) ? (v as string[]) : []),
     };
@@ -61,7 +61,7 @@ function* iterSamples(): Generator<Sample> {
 
 function main(): number {
   const { limit, show } = parseArgs();
-  const supported = new Set<string>(SUPPORTED_SHENSHA);
+  const supported = new Set<string>(ALL_SHENSHA);
   console.log(`[info] supported (${supported.size}): ${[...supported].sort().join(", ")}`);
 
   let total = 0, ok = 0, bad = 0, shown = 0;

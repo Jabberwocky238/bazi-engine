@@ -16,6 +16,8 @@ import {
   GONG_LU_DAY_HOUR, SAN_QI_TRIPLES, nayinOf,
   SHI_E_DA_BAI_DAYS, YIN_CHA_YANG_CUO_DAYS, SHI_LING_DAYS, JIU_CHOU_DAYS, BA_ZHUAN_DAYS,
   XUE_TANG_ZHI, CI_GUAN_ZHI, TIAN_LUO_ZHI, DI_WANG_ZHI,
+  LIU_XIU_DAYS, KUI_GANG_DAYS, JIN_SHEN_GANZHI, SI_FEI_DAYS,
+  ZHENG_XUE_TANG_GZ, ZHENG_CI_GUAN_GZ,
 } from "./consts.ts";
 
 export { SUPPORTED_SHENSHA };
@@ -233,6 +235,113 @@ export const isSanQiGuiRen: ShenshaCheck = (b, i) => {
     windows.some(w => w[0] === triple[0] && w[1] === triple[1] && w[2] === triple[2]));
 };
 
+// ========= 六秀日 / 魁罡日 (日柱固定集合) =========
+
+export const isLiuXiuRi: ShenshaCheck = (b, i) => {
+  if (i !== 2) return false;
+  return LIU_XIU_DAYS.includes(`${b.day.gan}${b.day.zhi}` as GanZhi);
+};
+
+export const isKuiGangRi: ShenshaCheck = (b, i) => {
+  if (i !== 2) return false;
+  return KUI_GANG_DAYS.includes(`${b.day.gan}${b.day.zhi}` as GanZhi);
+};
+
+// ========= 金神 =========
+// 日柱 ∈ {乙丑,己巳,癸酉}: 日柱金神;
+// 时柱 ∈ {乙丑,己巳,癸酉} 且 日干 ∈ {甲,己}: 时柱金神.
+
+export const isJinShen: ShenshaCheck = (b, i) => {
+  if (i === 2) {
+    return JIN_SHEN_GANZHI.includes(`${b.day.gan}${b.day.zhi}` as GanZhi);
+  }
+  if (i === 3) {
+    const hourGz = `${b.hour.gan}${b.hour.zhi}` as GanZhi;
+    return JIN_SHEN_GANZHI.includes(hourGz) && (b.day.gan === "甲" || b.day.gan === "己");
+  }
+  return false;
+};
+
+// ========= 四废日 (月支季节 → 日柱干支) =========
+
+export const isSiFeiRi: ShenshaCheck = (b, i) => {
+  if (i !== 2) return false;
+  const season = seasonOf(b.month.zhi);
+  return SI_FEI_DAYS[season].includes(`${b.day.gan}${b.day.zhi}` as GanZhi);
+};
+
+// ========= 地网 (年纳音为水/土 + 日支辰/巳) =========
+
+export const isDiWang: ShenshaCheck = (b, i) => {
+  if (i !== 2) return false;
+  const ny = nayinOf(b.year.gan, b.year.zhi);
+  if (ny !== "水" && ny !== "土") return false;
+  return (DI_WANG_ZHI as readonly Zhi[]).includes(b.day.zhi);
+};
+
+// ========= 正学堂 / 正词馆 (年纳音五行 → 柱干支; 年柱不标) =========
+
+const isZhengGanzhi = (table: Readonly<Record<string, GanZhi>>): ShenshaCheck =>
+  (b, i) => {
+    if (i === 0) return false;
+    const p = pillarAt(b, i);
+    return `${p.gan}${p.zhi}` === table[nayinOf(b.year.gan, b.year.zhi)];
+  };
+
+export const isZhengXueTang = isZhengGanzhi(ZHENG_XUE_TANG_GZ);
+export const isZhengCiGuan  = isZhengGanzhi(ZHENG_CI_GUAN_GZ);
+
+// ========= 学堂 / 词馆 (年纳音五行 长生/临官位; 排除正学堂/正词馆, 年柱不标) =========
+
+const isZhiFromNayinMap = (
+  zhiMap: Readonly<Record<string, Zhi>>,
+  excludeGZ: Readonly<Record<string, GanZhi>>,
+): ShenshaCheck =>
+  (b, i) => {
+    if (i === 0) return false;
+    const p = pillarAt(b, i);
+    const ny = nayinOf(b.year.gan, b.year.zhi);
+    if (p.zhi !== zhiMap[ny]) return false;
+    return `${p.gan}${p.zhi}` !== excludeGZ[ny];
+  };
+
+export const isXueTang = isZhiFromNayinMap(XUE_TANG_ZHI, ZHENG_XUE_TANG_GZ);
+export const isCiGuan  = isZhiFromNayinMap(CI_GUAN_ZHI,  ZHENG_CI_GUAN_GZ);
+
+// ========= 天罗地网 (辰巳 / 戌亥 成对) =========
+// 数据拟合规则:
+//   "地网" = 辰↔巳 互为对家; "天罗" = 戌↔亥 互为对家. 合并标为 "天罗地网".
+//   年柱: 柱支 ∈ {辰,巳,戌,亥} 且 日支 = 对家 → 标.
+//   日柱: 柱支 ∈ {辰,巳,戌,亥} 且 年支 = 对家 → 标 (年/日互为对家时二者同标).
+//   月/时柱: 柱支 ∈ {辰,巳,戌,亥} 且 另有某柱支 = 对家 → 标.
+
+const LUO_WANG_PARTNER: Partial<Record<Zhi, Zhi>> = {
+  辰: "巳", 巳: "辰", 戌: "亥", 亥: "戌",
+};
+
+export const isTianLuoDiWang: ShenshaCheck = (b, i) => {
+  const z = pillarAt(b, i).zhi;
+  const partner = LUO_WANG_PARTNER[z];
+  if (!partner) return false;
+  if (i === 0) return b.day.zhi === partner;
+  if (i === 2) return b.year.zhi === partner;
+  // month / hour: partner must be in year or day pillar
+  return b.year.zhi === partner || b.day.zhi === partner;
+};
+
+// ========= 日柱固定集合神煞 =========
+
+const isDayIn = (days: readonly GanZhi[]): ShenshaCheck => (b, i) => {
+  if (i !== 2) return false;
+  return days.includes(`${b.day.gan}${b.day.zhi}` as GanZhi);
+};
+
+export const isShiEDaBai   = isDayIn(SHI_E_DA_BAI_DAYS);
+export const isYinChaYangCuo = isDayIn(YIN_CHA_YANG_CUO_DAYS);
+export const isShiLingRi   = isDayIn(SHI_LING_DAYS);
+export const isJiuChouRi   = isDayIn(JIU_CHOU_DAYS);
+export const isBaZhuanRi   = isDayIn(BA_ZHUAN_DAYS);
+
 // ========= 注册表 / 汇总 =========
 
 export const SHENSHA_CHECKS: readonly (readonly [string, ShenshaCheck])[] = [
@@ -274,6 +383,21 @@ export const SHENSHA_CHECKS: readonly (readonly [string, ShenshaCheck])[] = [
   ["天罗", isTianLuo],
   ["拱禄", isGongLu],
   ["三奇贵人", isSanQiGuiRen],
+  ["六秀日", isLiuXiuRi],
+  ["魁罡日", isKuiGangRi],
+  ["金神", isJinShen],
+  ["四废日", isSiFeiRi],
+  ["地网", isDiWang],
+  ["正学堂", isZhengXueTang],
+  ["正词馆", isZhengCiGuan],
+  ["学堂", isXueTang],
+  ["词馆", isCiGuan],
+  ["天罗地网", isTianLuoDiWang],
+  ["十恶大败", isShiEDaBai],
+  ["阴差阳错", isYinChaYangCuo],
+  ["十灵日", isShiLingRi],
+  ["九丑日", isJiuChouRi],
+  ["八专日", isBaZhuanRi],
 ];
 
 function validate(b: BaziInput): void {
