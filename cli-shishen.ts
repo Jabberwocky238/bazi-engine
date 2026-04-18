@@ -88,13 +88,18 @@ function main(): number {
       continue;
     }
 
-    const diffs: { field: "ss" | "cg" | "cgss"; want: unknown; got: unknown }[] = [];
-    (["ss", "cg", "cgss"] as const).forEach(field => {
-      if (!eq(got[field], sample.truth[field])) {
-        perField[field]++;
-        diffs.push({ field, want: sample.truth[field], got: got[field] });
+    const pairs = [
+      ["十神",   "ss"],
+      ["藏干",   "cg"],
+      ["藏干十神", "cgss"],
+    ] as const;
+    const diffs: { field: string; want: unknown; got: unknown }[] = [];
+    for (const [resKey, truthKey] of pairs) {
+      if (!eq(got[resKey], sample.truth[truthKey])) {
+        perField[truthKey]++;
+        diffs.push({ field: resKey, want: sample.truth[truthKey], got: got[resKey] });
       }
-    });
+    }
 
     if (diffs.length) {
       bad++;

@@ -1,48 +1,62 @@
 /**
- * 八字 -> 十神 (ten gods). Pure library — no IO.
- *
- * Produces, relative to the day stem:
- *   ss:    string[4]          -- 年/月/日/时 天干十神 (day pillar is "日主")
- *   cg:    string[4][]        -- 各支藏干 (per the dataset's convention)
- *   cgss:  string[4][]        -- 藏干对应十神
+ * 八字 -> 十神 / 五行生克. Pure library — no IO.
  */
-import { type Gan, type Zhi, type Pillar, type BaziInput, GAN } from "./shensha.ts";
+import {
+  type Gan, type Pillar, type BaziInput,
+  WU_XING, isYangGan, CANG_GAN,
+} from "./consts.ts";
 
-export type ShishenResult = {
-  ss: string[];
-  cg: string[][];
-  cgss: string[][];
+export type WuXing = "木" | "火" | "土" | "金" | "水";
+export type Relation = "同类" | "我生" | "我克" | "克我" | "生我";
+
+/** 五行相生: key 生 value */
+const GENERATES: Readonly<Record<WuXing, WuXing>> = {
+  木:"火", 火:"土", 土:"金", 金:"水", 水:"木",
+};
+/** 五行相克: key 克 value */
+const CONTROLS: Readonly<Record<WuXing, WuXing>> = {
+  木:"土", 土:"水", 水:"火", 火:"金", 金:"木",
+};
+/** 反查: value 生 key */
+const GENERATED_BY: Readonly<Record<WuXing, WuXing>> = {
+  火:"木", 土:"火", 金:"土", 水:"金", 木:"水",
+};
+/** 反查: value 克 key */
+const CONTROLLED_BY: Readonly<Record<WuXing, WuXing>> = {
+  土:"木", 水:"土", 火:"水", 金:"火", 木:"金",
 };
 
-// 五行
-const WU_XING: Readonly<Record<Gan, "木" | "火" | "土" | "金" | "水">> = {
-  甲:"木", 乙:"木",
-  丙:"火", 丁:"火",
-  戊:"土", 己:"土",
-  庚:"金", 辛:"金",
-  壬:"水", 癸:"水",
+/** 日主的五行生克体系: 每种关系对应的五行. */
+export type WuXingRelations = {
+  同类: WuXing;
+  我生: WuXing;
+  我克: WuXing;
+  克我: WuXing;
+  生我: WuXing;
 };
 
-// 阴阳: 甲丙戊庚壬=阳, 乙丁己辛癸=阴
-function isYang(g: Gan): boolean {
-  return GAN.indexOf(g) % 2 === 0;
+/** 日主与某天干的五行关系 (不分阴阳). */
+export function relationOf(day: Gan, other: Gan): Relation {
+  const dx = WU_XING[day], ox = WU_XING[other];
+  if (dx === ox) return "同类";
+  if (GENERATES[dx] === ox) return "我生";
+  if (CONTROLS[dx]  === ox) return "我克";
+  if (CONTROLS[ox]  === dx) return "克我";
+  if (GENERATES[ox] === dx) return "生我";
+  throw new Error(`unreachable: ${day} vs ${other}`);
 }
 
-// 地支藏干 (convention observed in scraped dataset)
-const CANG_GAN: Readonly<Record<Zhi, readonly Gan[]>> = {
-  子:["癸"],
-  丑:["己","癸","辛"],
-  寅:["甲","丙","戊"],
-  卯:["乙"],
-  辰:["戊","乙","癸"],
-  巳:["丙","庚","戊"],
-  午:["丁","己"],
-  未:["己","丁","乙"],
-  申:["庚","壬","戊"],
-  酉:["辛"],
-  戌:["戊","辛","丁"],
-  亥:["壬","甲"],
-};
+/** 日主对应的五行生克体系. */
+export function wuxingRelations(day: Gan): WuXingRelations {
+  const self = WU_XING[day];
+  return {
+    同类: self,
+    我生: GENERATES[self],
+    我克: CONTROLS[self],
+    克我: CONTROLLED_BY[self],
+    生我: GENERATED_BY[self],
+  };
+}
 
 /**
  * Ten-god name for `other` relative to `day`.
@@ -53,31 +67,42 @@ const CANG_GAN: Readonly<Record<Zhi, readonly Gan[]>> = {
  *  同类: 同=比肩 异=劫财
  */
 export function shishenOf(day: Gan, other: Gan): string {
-  const dx = WU_XING[day], ox = WU_XING[other];
-  const same = isYang(day) === isYang(other);
-
-  if (dx === ox) return same ? "比肩" : "劫财";
-
-  // 生克关系: 木生火, 火生土, 土生金, 金生水, 水生木
-  //           木克土, 土克水, 水克火, 火克金, 金克木
-  const generates: Record<string, string> = { 木:"火", 火:"土", 土:"金", 金:"水", 水:"木" };
-  const controls:  Record<string, string> = { 木:"土", 土:"水", 水:"火", 火:"金", 金:"木" };
-
-  if (generates[dx] === ox) return same ? "食神" : "伤官"; // 我生
-  if (controls[dx]  === ox) return same ? "偏财" : "正财"; // 我克
-  if (controls[ox]  === dx) return same ? "七杀" : "正官"; // 克我
-  if (generates[ox] === dx) return same ? "偏印" : "正印"; // 生我
-
-  throw new Error(`unreachable: ${day} vs ${other}`);
+  const rel = relationOf(day, other);
+  const same = isYangGan(day) === isYangGan(other);
+  switch (rel) {
+    case "同类": return same ? "比肩" : "劫财";
+    case "我生": return same ? "食神" : "伤官";
+    case "我克": return same ? "偏财" : "正财";
+    case "克我": return same ? "七杀" : "正官";
+    case "生我": return same ? "偏印" : "正印";
+  }
 }
+
+export type ShishenResult = {
+  /** 每柱天干十神 (日柱为 "日主") */
+  十神: string[];
+  /** 每柱地支藏干 */
+  藏干: string[][];
+  /** 每柱藏干对应十神 */
+  藏干十神: string[][];
+  /** 每柱天干与日主的五行关系 (日柱为 "同类") */
+  生克: Relation[];
+  /** 每柱藏干与日主的五行关系 */
+  藏干生克: Relation[][];
+  /** 日主的五行生克体系 */
+  五行: WuXingRelations;
+};
 
 export function computeShishen(input: BaziInput): ShishenResult {
   const day = input.day.gan;
   const pillars: Pillar[] = [input.year, input.month, input.day, input.hour];
 
-  const ss = pillars.map((p, i) => (i === 2 ? "日主" : shishenOf(day, p.gan)));
-  const cg = pillars.map(p => [...CANG_GAN[p.zhi]]);
-  const cgss = cg.map(gans => gans.map(g => shishenOf(day, g)));
+  const 十神 = pillars.map((p, i) => (i === 2 ? "日主" : shishenOf(day, p.gan)));
+  const 藏干 = pillars.map(p => [...CANG_GAN[p.zhi]]);
+  const 藏干十神 = 藏干.map(gans => gans.map(g => shishenOf(day, g)));
+  const 生克 = pillars.map(p => relationOf(day, p.gan));
+  const 藏干生克 = pillars.map(p => CANG_GAN[p.zhi].map(g => relationOf(day, g)));
+  const 五行 = wuxingRelations(day);
 
-  return { ss, cg, cgss };
+  return { 十神, 藏干, 藏干十神, 生克, 藏干生克, 五行 };
 }
