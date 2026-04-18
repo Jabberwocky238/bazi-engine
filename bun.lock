@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "jw238bazi",
+      "name": "@jabberwocky238/bazi-engine",
       "dependencies": {
         "lunar-typescript": "^1.8.6",
       },

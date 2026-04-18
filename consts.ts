@@ -381,6 +381,13 @@ export const ZHENG_CI_GUAN_GZ: Readonly<Record<NayinWuxing, GanZhi>> = {
 export const TIAN_LUO_ZHI: readonly Zhi[] = ["戌","亥"] as const;
 export const DI_WANG_ZHI: readonly Zhi[] = ["辰","巳"] as const;
 
+// --- 天罗地网 (地支配对法) --------------------------------------------
+// 《知乎·四柱神煞》等: 辰↔巳 互见为地网, 戌↔亥 互见为天罗.
+// 以年支或日支为主, 其它地支见之者为是. 合并标作"天罗地网".
+export const LUO_WANG_PARTNER: Partial<Record<Zhi, Zhi>> = {
+  辰:"巳", 巳:"辰", 戌:"亥", 亥:"戌",
+};
+
 // 按"月支所属季节"查日柱的神煞表 (春:寅卯辰 夏:巳午未 秋:申酉戌 冬:亥子丑)
 export type Season = "春" | "夏" | "秋" | "冬";
 export function seasonOf(monthZhi: Zhi): Season {

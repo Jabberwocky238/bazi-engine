@@ -1,5 +1,5 @@
 {
-  "name": "jw238bazi",
+  "name": "@jabberwocky238/bazi-engine",
   "version": "0.0.0",
   "type": "module",
   "main": "dist/index.js",

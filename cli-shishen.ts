@@ -10,6 +10,7 @@
 import { readFileSync } from "node:fs";
 import { computeShishen } from "./shishen.ts";
 import { type BaziInput, type Gan, type Zhi } from "./shensha.ts";
+import { type Sex } from "./consts.ts";
 
 const DATA_DIR = new URL("./bazi_data/", import.meta.url).pathname.replace(/^\//, "");
 
@@ -53,6 +54,9 @@ function* iterSamples(): Generator<Sample> {
     if (!isStrArr(ss) || ss.length !== 4) continue;
     if (!isStrArr2(cg) || cg.length !== 4) continue;
     if (!isStrArr2(cgss) || cgss.length !== 4) continue;
+    const sexRaw = data?.sex;
+    if (sexRaw !== 0 && sexRaw !== 1) continue;
+    const sex = sexRaw as Sex;
     yield {
       path: rel,
       input: {
@@ -60,6 +64,7 @@ function* iterSamples(): Generator<Sample> {
         month: { gan: mg as Gan, zhi: mz as Zhi },
         day:   { gan: dg as Gan, zhi: dz as Zhi },
         hour:  { gan: hg as Gan, zhi: hz as Zhi },
+        sex,
       },
       truth: { ss, cg, cgss },
     };

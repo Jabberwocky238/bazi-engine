@@ -17,7 +17,9 @@ import {
   SHI_E_DA_BAI_DAYS, YIN_CHA_YANG_CUO_DAYS, SHI_LING_DAYS, JIU_CHOU_DAYS, BA_ZHUAN_DAYS,
   XUE_TANG_ZHI, CI_GUAN_ZHI, TIAN_LUO_ZHI, DI_WANG_ZHI,
   LIU_XIU_DAYS, KUI_GANG_DAYS, JIN_SHEN_GANZHI, SI_FEI_DAYS,
-  ZHENG_XUE_TANG_GZ, ZHENG_CI_GUAN_GZ, ALL_SHENSHA
+  ZHENG_XUE_TANG_GZ, ZHENG_CI_GUAN_GZ, ALL_SHENSHA,
+  JIN_YU, GUO_YIN, HONG_YAN, LIU_XIA, TIAN_YI_XING, XUE_REN,
+  LUO_WANG_PARTNER,
 } from "./consts.ts";
 
 export type { Gan, Zhi, Pillar, BaziInput, GanZhi } from "./consts.ts";
@@ -307,16 +309,12 @@ const isZhiFromNayinMap = (
 export const isXueTang = isZhiFromNayinMap(XUE_TANG_ZHI, ZHENG_XUE_TANG_GZ);
 export const isCiGuan  = isZhiFromNayinMap(CI_GUAN_ZHI,  ZHENG_CI_GUAN_GZ);
 
-// ========= 天罗地网 (辰巳 / 戌亥 成对) =========
-// 数据拟合规则:
-//   "地网" = 辰↔巳 互为对家; "天罗" = 戌↔亥 互为对家. 合并标为 "天罗地网".
+// ========= 天罗地网 (地支配对法; 以年/日支为主) =========
+// 辰↔巳 为地网对家; 戌↔亥 为天罗对家. 合并标作 "天罗地网".
+// 查法以年支或日支为主 — 即对家必须出现在年或日柱才成立:
 //   年柱: 柱支 ∈ {辰,巳,戌,亥} 且 日支 = 对家 → 标.
-//   日柱: 柱支 ∈ {辰,巳,戌,亥} 且 年支 = 对家 → 标 (年/日互为对家时二者同标).
-//   月/时柱: 柱支 ∈ {辰,巳,戌,亥} 且 另有某柱支 = 对家 → 标.
-
-const LUO_WANG_PARTNER: Partial<Record<Zhi, Zhi>> = {
-  辰: "巳", 巳: "辰", 戌: "亥", 亥: "戌",
-};
+//   日柱: 柱支 ∈ {辰,巳,戌,亥} 且 年支 = 对家 → 标.
+//   月/时柱: 柱支 ∈ {辰,巳,戌,亥} 且 年支或日支 = 对家 → 标.
 
 export const isTianLuoDiWang: ShenshaCheck = (b, i) => {
   const z = pillarAt(b, i).zhi;
@@ -324,9 +322,32 @@ export const isTianLuoDiWang: ShenshaCheck = (b, i) => {
   if (!partner) return false;
   if (i === 0) return b.day.zhi === partner;
   if (i === 2) return b.year.zhi === partner;
-  // month / hour: partner must be in year or day pillar
   return b.year.zhi === partner || b.day.zhi === partner;
 };
+
+// ========= 金舆 / 国印贵人 / 红艳煞 / 流霞 (日干/年干 → 地支) =========
+
+const dayOrYearGanSingleZhi = (table: Readonly<Record<Gan, Zhi>>): ShenshaCheck =>
+  (b, i) => {
+    const z = pillarAt(b, i).zhi;
+    return z === table[b.day.gan] || z === table[b.year.gan];
+  };
+
+const dayGanSingleZhi = (table: Readonly<Record<Gan, Zhi>>): ShenshaCheck =>
+  (b, i) => pillarAt(b, i).zhi === table[b.day.gan];
+
+export const isJinYu        = dayOrYearGanSingleZhi(JIN_YU);
+export const isGuoYinGuiRen = dayOrYearGanSingleZhi(GUO_YIN);
+export const isHongYanSha   = dayGanSingleZhi(HONG_YAN);
+export const isLiuXia       = dayGanSingleZhi(LIU_XIA);
+
+// ========= 天医 / 血刃 (月支 → 地支) =========
+
+const monthZhiToZhi = (table: Readonly<Record<Zhi, Zhi>>): ShenshaCheck =>
+  (b, i) => pillarAt(b, i).zhi === table[b.month.zhi];
+
+export const isTianYi  = monthZhiToZhi(TIAN_YI_XING);
+export const isXueRen  = monthZhiToZhi(XUE_REN);
 
 // ========= 日柱固定集合神煞 =========
 
@@ -397,6 +418,12 @@ export const SHENSHA_CHECKS: readonly (readonly [typeof ALL_SHENSHA[number], She
   ["十灵日", isShiLingRi],
   ["九丑日", isJiuChouRi],
   ["八专日", isBaZhuanRi],
+  ["金舆", isJinYu],
+  ["国印贵人", isGuoYinGuiRen],
+  ["红艳煞", isHongYanSha],
+  ["流霞", isLiuXia],
+  ["天医", isTianYi],
+  ["血刃", isXueRen],
 ];
 
 function validate(b: BaziInput): void {
