@@ -1,0 +1,15 @@
+{
+  "name": "jw238bazi",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "shishen": "bun run cli-shishen.ts",
+    "shensha": "bun run cli-shensha.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

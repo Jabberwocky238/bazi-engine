@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python verify_shensha.py)",
+      "Bash(bunx tsc *)"
+    ]
+  }
+}
