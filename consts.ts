@@ -13,7 +13,9 @@ export type GanZhi = `${Gan}${Zhi}`;
 export type TriadKey = "申子辰" | "寅午戌" | "亥卯未" | "巳酉丑";
 
 export type Pillar = { gan: Gan; zhi: Zhi };
-export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour: Pillar };
+/** sex: 1 = 男, 0 = 女. Required for sex-dependent shensha such as 元辰. */
+export type Sex = 0 | 1;
+export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour: Pillar; sex?: Sex };
 
 // --- 基础 ---------------------------------------------------------------
 
@@ -99,21 +101,61 @@ export const FEI_REN: Readonly<Record<Gan, Zhi>> = {
 };
 
 /**
- * 福星贵人 (柱干 → 柱支). 规则:
- *   柱干支 ∈ 下表 AND 柱干 ∈ {日干, 年干}
- * 表来源:《三命通会·论福星贵人》"甲丙相邀入虎乡 ..." 歌诀
+ * 福星贵人. 以年干或日干起, 四柱地支见对应字者.
+ * 《三命通会·论福星贵人》:
+ *   "甲丙相邀入虎乡, 更游鼠穴最高强;
+ *    戊猴己未丁宜亥, 乙癸逢牛卯禄昌;
+ *    庚趋马首辛到巳, 壬骑龙背喜非常."
  */
 export const FU_XING: Readonly<Record<Gan, readonly Zhi[]>> = {
   甲:["寅","子"],
   乙:["丑","卯"],
   丙:["寅","子"],
-  丁:["亥","丑"],
-  戊:["申","子","寅"],
-  己:["未","卯"],
-  庚:["午","寅","申","子"],
-  辛:["巳","丑","亥","未"],
-  壬:["辰","午","寅","子"],
-  癸:["丑","卯","巳"],
+  丁:["亥"],
+  戊:["申"],
+  己:["未"],
+  庚:["午"],
+  辛:["巳"],
+  壬:["辰"],
+  癸:["丑","卯"],
+};
+
+/**
+ * 太极贵人. 以年干或日干起, 四柱地支见对应字者.
+ * 口诀: 甲乙生人子午中, 丙丁鸡兔(卯酉)定亨通; 戊己两干临四季(辰戌丑未),
+ *       庚辛寅亥禄丰隆; 壬癸巳申偏喜美.
+ */
+export const TAI_JI: Readonly<Record<Gan, readonly Zhi[]>> = {
+  甲:["子","午"], 乙:["子","午"],
+  丙:["卯","酉"], 丁:["卯","酉"],
+  戊:["辰","戌","丑","未"], 己:["辰","戌","丑","未"],
+  庚:["寅","亥"], 辛:["寅","亥"],
+  壬:["巳","申"], 癸:["巳","申"],
+};
+
+/**
+ * 文昌贵人. 阳干长生位之冲, 阴干长生位.
+ * 以年干或日干起, 四柱地支见对应字者.
+ */
+export const WEN_CHANG: Readonly<Record<Gan, Zhi>> = {
+  甲:"巳", 乙:"午",
+  丙:"申", 丁:"酉",
+  戊:"申", 己:"酉",
+  庚:"亥", 辛:"子",
+  壬:"寅", 癸:"卯",
+};
+
+/**
+ * 天厨贵人 = 食神之禄.
+ *   甲食神丙→丙禄巳; 丙食神戊→戊禄巳; 戊食神庚→庚禄申; ...
+ * 以年干或日干起, 四柱地支见对应字者.
+ */
+export const TIAN_CHU: Readonly<Record<Gan, Zhi>> = {
+  甲:"巳", 乙:"午",
+  丙:"巳", 丁:"午",
+  戊:"申", 己:"酉",
+  庚:"亥", 辛:"子",
+  壬:"寅", 癸:"卯",
 };
 
 // --- 年支查支 -----------------------------------------------------------
@@ -166,12 +208,161 @@ export const DE_XIU: Readonly<Record<TriadKey, readonly Gan[]>> = {
   "巳酉丑": ["乙","庚","辛"],
 };
 
+// --- 年支相对位移神煞 (丧门/吊客/披麻/勾绞煞) ---------------------------
+// 查法: 以年支为基准取固定偏移位
+//   丧门    = 年支 + 2
+//   勾绞煞  = 年支 + 3
+//   披麻    = 年支 - 3 (即 + 9)
+//   吊客    = 年支 - 2 (即 + 10)
+// 均不区分性别、年干阴阳. 由数据拟合 (1550 样本) 确认.
+export const SANG_MEN_OFFSET = 2;
+export const GOU_JIAO_OFFSET = 3;
+export const PI_MA_OFFSET = 9;
+export const DIAO_KE_OFFSET = 10;
+
+// --- 元辰 (大耗) --------------------------------------------------------
+// 以年支为基准, 按 "年干阴阳 × 性别" 分组:
+//   阳男 / 阴女 → 年支 + 7
+//   阴男 / 阳女 → 年支 + 5
+// 阳年干: 甲丙戊庚壬 (GAN 索引偶数); 阴年干: 乙丁己辛癸 (奇数)
+export const YUAN_CHEN_OFFSET_YANG_MALE_YIN_FEMALE = 7;
+export const YUAN_CHEN_OFFSET_YIN_MALE_YANG_FEMALE = 5;
+
 // --- 日柱特殊 -----------------------------------------------------------
 
 // 孤鸾煞 (日柱固定集合, 来自数据)
 export const GU_LUAN_DAYS: readonly GanZhi[] = [
   "乙巳","丁巳","戊申","辛亥","壬子","甲寅","戊午","丙午",
 ] as const;
+
+// 十恶大败 (日柱, 本旬禄位落空, 十无禄日)
+export const SHI_E_DA_BAI_DAYS: readonly GanZhi[] = [
+  "甲辰","乙巳","丙申","丁亥","戊戌","己丑","庚辰","辛巳","壬申","癸亥",
+] as const;
+
+// 阴差阳错 (日柱, 12 日)
+export const YIN_CHA_YANG_CUO_DAYS: readonly GanZhi[] = [
+  "辛卯","壬辰","癸巳","丙午","丁未","戊申",
+  "辛酉","壬戌","癸亥","丙子","丁丑","戊寅",
+] as const;
+
+// 十灵日 (日柱, 10 日)
+export const SHI_LING_DAYS: readonly GanZhi[] = [
+  "甲辰","乙亥","丙辰","丁酉","戊午","庚戌","庚寅","辛亥","壬寅","癸未",
+] as const;
+
+// 九丑日 (日柱, 9 日, 自坐桃花)
+export const JIU_CHOU_DAYS: readonly GanZhi[] = [
+  "戊子","戊午","己卯","己酉","辛卯","辛酉","壬子","壬午","丁酉",
+] as const;
+
+// 八专日 (日柱, 8 日, 干支同气)
+export const BA_ZHUAN_DAYS: readonly GanZhi[] = [
+  "甲寅","乙卯","丁未","戊戌","己未","庚申","辛酉","癸丑",
+] as const;
+
+// 六秀日 (日柱, 6 日)
+export const LIU_XIU_DAYS: readonly GanZhi[] = [
+  "丙午","丁未","戊子","戊午","己丑","己未",
+] as const;
+
+// 魁罡日 (日柱, 4 日)
+export const KUI_GANG_DAYS: readonly GanZhi[] = [
+  "壬辰","庚辰","庚戌","戊戌",
+] as const;
+
+// 金神 (固定干支: 乙丑 / 己巳 / 癸酉)
+export const JIN_SHEN_GANZHI: readonly GanZhi[] = [
+  "乙丑","己巳","癸酉",
+] as const;
+
+// 四废日: 月支所属季节 → 日柱干支 (当令五行之绝地)
+export const SI_FEI_DAYS: Readonly<Record<"春"|"夏"|"秋"|"冬", readonly GanZhi[]>> = {
+  春: ["庚申","辛酉"],
+  夏: ["壬子","癸亥"],
+  秋: ["甲寅","乙卯"],
+  冬: ["丙午","丁巳"],
+};
+
+// --- 学堂 / 词馆 (年纳音 → 地支) ----------------------------------------
+// 学堂 = 年纳音五行之长生; 词馆 = 年纳音五行之临官.
+// 土随水派 (长生申/临官亥), 火派为次.
+export const XUE_TANG_ZHI: Readonly<Record<NayinWuxing, Zhi>> = {
+  金:"巳", 木:"亥", 水:"申", 土:"申", 火:"寅",
+};
+export const CI_GUAN_ZHI: Readonly<Record<NayinWuxing, Zhi>> = {
+  金:"申", 木:"寅", 水:"亥", 土:"亥", 火:"巳",
+};
+
+// 正学堂 / 正词馆: 柱纳音 = 年纳音五行, 且柱支 = 长生 / 临官 位.
+// 其唯一满足条件的干支如下 (与 "学堂/词馆" 互斥: 后者仅在柱支一致但柱非此 "正" 干支时命中).
+export const ZHENG_XUE_TANG_GZ: Readonly<Record<NayinWuxing, GanZhi>> = {
+  金:"辛巳", 木:"己亥", 水:"甲申", 土:"戊申", 火:"丙寅",
+};
+export const ZHENG_CI_GUAN_GZ: Readonly<Record<NayinWuxing, GanZhi>> = {
+  金:"壬申", 木:"庚寅", 水:"癸亥", 土:"丁亥", 火:"乙巳",
+};
+
+// --- 天罗地网 (年纳音起) -----------------------------------------------
+// 火命见戌亥 → 天罗; 水/土命见辰巳 → 地网; 金木无此煞.
+export const TIAN_LUO_ZHI: readonly Zhi[] = ["戌","亥"] as const;
+export const DI_WANG_ZHI: readonly Zhi[] = ["辰","巳"] as const;
+
+// 按"月支所属季节"查日柱的神煞表 (春:寅卯辰 夏:巳午未 秋:申酉戌 冬:亥子丑)
+export type Season = "春" | "夏" | "秋" | "冬";
+export function seasonOf(monthZhi: Zhi): Season {
+  if ("寅卯辰".includes(monthZhi)) return "春";
+  if ("巳午未".includes(monthZhi)) return "夏";
+  if ("申酉戌".includes(monthZhi)) return "秋";
+  return "冬";
+}
+
+// 天转日: 春乙卯 / 夏丙午 / 秋辛酉 / 冬壬子
+export const TIAN_ZHUAN_DAY: Readonly<Record<Season, GanZhi>> = {
+  春:"乙卯", 夏:"丙午", 秋:"辛酉", 冬:"壬子",
+};
+// 地转日: 春辛卯 / 夏戊午 / 秋癸酉 / 冬丙子
+export const DI_ZHUAN_DAY: Readonly<Record<Season, GanZhi>> = {
+  春:"辛卯", 夏:"戊午", 秋:"癸酉", 冬:"丙子",
+};
+// 天赦日: 春戊寅 / 夏甲午 / 秋戊申 / 冬甲子
+export const TIAN_SHE_DAY: Readonly<Record<Season, GanZhi>> = {
+  春:"戊寅", 夏:"甲午", 秋:"戊申", 冬:"甲子",
+};
+
+// 拱禄: 日柱 + 时柱 固定五组 (《三命通会·拱禄拱贵》)
+export const GONG_LU_DAY_HOUR: readonly (readonly [GanZhi, GanZhi])[] = [
+  ["癸亥","癸丑"], ["癸丑","癸亥"],          // 拱子
+  ["丁巳","丁未"], ["己未","己巳"],          // 拱午
+  ["戊辰","戊午"],                            // 拱巳
+] as const;
+
+// 三奇贵人: 三个连续柱天干按顺序匹配 (天上/地下/人中)
+export const SAN_QI_TRIPLES: readonly (readonly [Gan, Gan, Gan])[] = [
+  ["甲","戊","庚"], // 天上三奇
+  ["乙","丙","丁"], // 地下三奇
+  ["壬","癸","辛"], // 人中三奇
+] as const;
+
+// --- 六十甲子纳音五行 ---------------------------------------------------
+// 顺序 甲子→癸亥, 每两柱同一五行. 用于判定年命纳音, 如 天罗(火命)、地网(水土命)
+export type NayinWuxing = "金" | "火" | "木" | "土" | "水";
+const NAYIN_CYCLE: readonly NayinWuxing[] = [
+  "金","金","火","火","木","木","土","土","金","金", // 甲子乙丑~壬申癸酉
+  "火","火","水","水","土","土","金","金","木","木", // 甲戌乙亥~壬午癸未
+  "水","水","土","土","火","火","木","木","水","水", // 甲申乙酉~壬辰癸巳
+  "金","金","火","火","木","木","土","土","金","金", // 甲午乙未~壬寅癸卯
+  "火","火","水","水","土","土","金","金","木","木", // 甲辰乙巳~壬子癸丑
+  "水","水","土","土","火","火","木","木","水","水", // 甲寅乙卯~壬戌癸亥
+] as const;
+
+export function nayinOf(gan: Gan, zhi: Zhi): NayinWuxing {
+  const g = GAN.indexOf(gan), z = ZHI.indexOf(zhi);
+  for (let n = 0; n < 60; n++) {
+    if (n % 10 === g && n % 12 === z) return NAYIN_CYCLE[n]!;
+  }
+  throw new Error(`invalid ganzhi ${gan}${zhi}`);
+}
 
 // --- 旬空 ---------------------------------------------------------------
 
@@ -202,5 +393,21 @@ export const SUPPORTED_SHENSHA = [
   // 月令
   "月德贵人","月德合","天德贵人","天德合","德秀贵人",
   // 其他
-  "空亡","孤鸾煞",
+  "空亡","孤鸾煞","六秀日","魁罡日","金神",
+  // 季节 + 日柱
+  "天转日","地转日","天赦日","四废日",
+  // 日柱 + 其他
+  "天罗","拱禄","三奇贵人",
+  // 年支相对位移
+  "丧门","吊客","披麻","勾绞煞",
+  // 元辰 (需 sex)
+  "元辰",
+  // 日柱集合
+  "十恶大败","阴差阳错","十灵日","九丑日","八专日",
+  // 年纳音 → 柱支
+  "学堂","词馆","天罗地网","地网","正学堂","正词馆",
+  // 年/日干 → 地支
+  "太极贵人","文昌贵人","天厨贵人",
+  // 月令季节 + 年纳音 (日支/时支)
+  "童子煞",
 ] as const;

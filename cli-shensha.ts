@@ -11,6 +11,7 @@
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { computeShensha, SUPPORTED_SHENSHA, type BaziInput, type Gan, type Zhi } from "./shensha.ts";
+import type { Sex } from "./consts.ts";
 
 const DATA_DIR = new URL("./bazi_data/", import.meta.url).pathname.replace(/^\//, "");
 const PILLAR_KEYS = ["year", "month", "day", "hour"] as const;
@@ -42,6 +43,8 @@ function* iterSamples(): Generator<Sample> {
     if (!yg || !yz || !mg || !mz || !dg || !dz || !hg || !hz) continue;
     const truth = data.szshensha;
     if (!Array.isArray(truth) || truth.length < 4) continue;
+    const sexRaw = data?.sex;
+    const sex: Sex | undefined = sexRaw === 0 || sexRaw === 1 ? (sexRaw as Sex) : undefined;
     yield {
       path: rel,
       input: {
@@ -49,6 +52,7 @@ function* iterSamples(): Generator<Sample> {
         month: { gan: mg as Gan, zhi: mz as Zhi },
         day:   { gan: dg as Gan, zhi: dz as Zhi },
         hour:  { gan: hg as Gan, zhi: hz as Zhi },
+        sex,
       },
       truth: (truth as unknown[]).slice(0, 4).map(v => Array.isArray(v) ? (v as string[]) : []),
     };

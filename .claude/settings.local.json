@@ -3,8 +3,13 @@
     "allow": [
       "Bash(python verify_shensha.py)",
       "Bash(bunx tsc *)",
-      "Bash(python -c ' *)",
-      "Bash(bun run *)"
+      "Bash(bun run *)",
+      "WebSearch",
+      "WebFetch(domain:baike.baidu.com)",
+      "WebFetch(domain:www.shenjige.cn)",
+      "WebFetch(domain:www.sf280.com)",
+      "WebFetch(domain:www.sohu.com)",
+      "Bash(python)"
     ]
   }
 }
