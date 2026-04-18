@@ -1,10 +1,22 @@
 {
   "name": "jw238bazi",
-  "module": "index.ts",
+  "version": "0.0.0",
   "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "shishen": "bun run cli-shishen.ts",
     "shensha": "bun run cli-shensha.ts"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@types/bun": "latest"
