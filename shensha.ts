@@ -17,7 +17,7 @@ import {
   SHI_E_DA_BAI_DAYS, YIN_CHA_YANG_CUO_DAYS, SHI_LING_DAYS, JIU_CHOU_DAYS, BA_ZHUAN_DAYS,
   XUE_TANG_ZHI, CI_GUAN_ZHI, TIAN_LUO_ZHI, DI_WANG_ZHI,
   LIU_XIU_DAYS, KUI_GANG_DAYS, JIN_SHEN_GANZHI, SI_FEI_DAYS,
-  ZHENG_XUE_TANG_GZ, ZHENG_CI_GUAN_GZ,
+  ZHENG_XUE_TANG_GZ, ZHENG_CI_GUAN_GZ, ALL_SHENSHA
 } from "./consts.ts";
 
 export type { Gan, Zhi, Pillar, BaziInput, GanZhi } from "./consts.ts";
@@ -343,7 +343,7 @@ export const isBaZhuanRi   = isDayIn(BA_ZHUAN_DAYS);
 
 // ========= 注册表 / 汇总 =========
 
-export const SHENSHA_CHECKS: readonly (readonly [string, ShenshaCheck])[] = [
+export const SHENSHA_CHECKS: readonly (readonly [typeof ALL_SHENSHA[number], ShenshaCheck])[] = [
   ["禄神", isLuShen],
   ["天乙贵人", isTianYiGuiRen],
   ["羊刃", isYangRen],

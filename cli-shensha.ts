@@ -44,7 +44,8 @@ function* iterSamples(): Generator<Sample> {
     const truth = data.szshensha;
     if (!Array.isArray(truth) || truth.length < 4) continue;
     const sexRaw = data?.sex;
-    const sex: Sex | undefined = sexRaw === 0 || sexRaw === 1 ? (sexRaw as Sex) : undefined;
+    if (sexRaw !== 0 && sexRaw !== 1) continue;
+    const sex = sexRaw as Sex;
     yield {
       path: rel,
       input: {
@@ -52,7 +53,7 @@ function* iterSamples(): Generator<Sample> {
         month: { gan: mg as Gan, zhi: mz as Zhi },
         day:   { gan: dg as Gan, zhi: dz as Zhi },
         hour:  { gan: hg as Gan, zhi: hz as Zhi },
-        sex: sex!,
+        sex,
       },
       truth: (truth as unknown[]).slice(0, 4).map(v => Array.isArray(v) ? (v as string[]) : []),
     };
