@@ -5,12 +5,12 @@
  *   bun run shensha --limit 100
  *   bun run shensha --show 20 # how many diffs to print (default 10)
  *
- * Compares shensha sets after intersecting both sides with SUPPORTED_SHENSHA —
+ * Compares shensha sets after intersecting both sides with ALL_SHENSHA —
  * rules outside that list are out of scope.
  */
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
-import { computeShensha, SUPPORTED_SHENSHA, type BaziInput, type Gan, type Zhi } from "./shensha.ts";
+import { computeShensha, type BaziInput, type Gan, type Zhi } from "./shensha.ts";
 import { ALL_SHENSHA, type Sex } from "./consts.ts";
 
 const DATA_DIR = new URL("./bazi_data/", import.meta.url).pathname.replace(/^\//, "");
