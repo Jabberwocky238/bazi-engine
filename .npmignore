@@ -1,0 +1,25 @@
+# Source & tests
+*.ts
+!dist/**/*.d.ts
+cli-*.ts
+verify_*.py
+
+# Data fixtures
+bazi_data/
+data/
+
+# Config
+tsconfig.json
+bun.lockb
+bun.lock
+
+# CI / repo meta
+.github/
+.gitignore
+.vscode/
+.idea/
+
+# Misc
+*.log
+*.tar.gz
+node_modules/
