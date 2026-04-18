@@ -1,19 +1,28 @@
 {
   "name": "@jabberwocky238/bazi-engine",
   "version": "0.0.0",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "shishen": "bun run cli-shishen.ts",
-    "shensha": "bun run cli-shensha.ts"
+    "shensha": "bun run cli-shensha.ts",
+    "clean": "rm -rf dist",
+    "build": "mkdir -p dist && bun build ./index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json"
   },
   "publishConfig": {
     "access": "public"
