@@ -53,8 +53,10 @@ export const isYangRen: ShenshaCheck = (b, i) =>
 export const isFeiRen: ShenshaCheck = (b, i) =>
   pillarAt(b, i).zhi === FEI_REN[b.day.gan];
 
-export const isFuXingGuiRen: ShenshaCheck = (b, i) =>
-  FU_XING[b.day.gan].includes(pillarAt(b, i).zhi);
+export const isFuXingGuiRen: ShenshaCheck = (b, i) => {
+  const p = pillarAt(b, i);
+  return FU_XING[p.gan].includes(p.zhi);
+};
 
 // ========= 三合神煞 (年支起局; 除 灾煞 外也从日支起局; 不标源柱) =========
 
