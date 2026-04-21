@@ -10,10 +10,9 @@
  */
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
-import { computeShensha, type BaziInput, type Gan, type Zhi } from "./shensha.ts";
-import { ALL_SHENSHA, type Sex } from "./consts.ts";
+import { computeShensha, type BaziInput, type Gan, type Zhi, ALL_SHENSHA, type Sex } from "../src/index.ts";
 
-const DATA_DIR = new URL("./bazi_data/", import.meta.url).pathname.replace(/^\//, "");
+const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname.replace(/^\//, "");
 const PILLAR_KEYS = ["year", "month", "day", "hour"] as const;
 
 type Sample = { path: string; input: BaziInput; truth: string[][] };
@@ -49,10 +48,11 @@ function* iterSamples(): Generator<Sample> {
     yield {
       path: rel,
       input: {
-        year:  { gan: yg as Gan, zhi: yz as Zhi },
-        month: { gan: mg as Gan, zhi: mz as Zhi },
-        day:   { gan: dg as Gan, zhi: dz as Zhi },
-        hour:  { gan: hg as Gan, zhi: hz as Zhi },
+        year:   { gan: yg as Gan, zhi: yz as Zhi },
+        month:  { gan: mg as Gan, zhi: mz as Zhi },
+        day:    { gan: dg as Gan, zhi: dz as Zhi },
+        hour:   { gan: hg as Gan, zhi: hz as Zhi },
+        minute: { gan: hg as Gan, zhi: hz as Zhi }, // 占位: 数据集无分柱; 计算不使用
         sex,
       },
       truth: (truth as unknown[]).slice(0, 4).map(v => Array.isArray(v) ? (v as string[]) : []),

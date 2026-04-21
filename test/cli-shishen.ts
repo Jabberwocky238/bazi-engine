@@ -8,11 +8,9 @@
  * Compares `ss` / `cg` / `cgss` exactly.
  */
 import { readFileSync } from "node:fs";
-import { computeShishen } from "./shishen.ts";
-import { type BaziInput, type Gan, type Zhi } from "./shensha.ts";
-import { type Sex } from "./consts.ts";
+import { computeShishen, type BaziInput, type Gan, type Zhi, type Sex } from "../src/index.ts";
 
-const DATA_DIR = new URL("./bazi_data/", import.meta.url).pathname.replace(/^\//, "");
+const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname.replace(/^\//, "");
 
 type Sample = {
   path: string;
@@ -60,10 +58,11 @@ function* iterSamples(): Generator<Sample> {
     yield {
       path: rel,
       input: {
-        year:  { gan: yg as Gan, zhi: yz as Zhi },
-        month: { gan: mg as Gan, zhi: mz as Zhi },
-        day:   { gan: dg as Gan, zhi: dz as Zhi },
-        hour:  { gan: hg as Gan, zhi: hz as Zhi },
+        year:   { gan: yg as Gan, zhi: yz as Zhi },
+        month:  { gan: mg as Gan, zhi: mz as Zhi },
+        day:    { gan: dg as Gan, zhi: dz as Zhi },
+        hour:   { gan: hg as Gan, zhi: hz as Zhi },
+        minute: { gan: hg as Gan, zhi: hz as Zhi }, // 占位: 数据集无分柱; 计算不使用
         sex,
       },
       truth: { ss, cg, cgss },

@@ -20,10 +20,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "shishen": "bun run cli-shishen.ts",
-    "shensha": "bun run cli-shensha.ts",
+    "shishen": "bun run test/cli-shishen.ts",
+    "shensha": "bun run test/cli-shensha.ts",
     "clean": "rm -rf dist",
-    "build": "mkdir -p dist && bun build ./index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json"
+    "build": "mkdir -p dist && bun build ./src/index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json"
   },
   "publishConfig": {
     "access": "public"
