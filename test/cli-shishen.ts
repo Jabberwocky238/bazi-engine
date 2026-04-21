@@ -58,11 +58,10 @@ function* iterSamples(): Generator<Sample> {
     yield {
       path: rel,
       input: {
-        year:   { gan: yg as Gan, zhi: yz as Zhi },
-        month:  { gan: mg as Gan, zhi: mz as Zhi },
-        day:    { gan: dg as Gan, zhi: dz as Zhi },
-        hour:   { gan: hg as Gan, zhi: hz as Zhi },
-        minute: { gan: hg as Gan, zhi: hz as Zhi }, // 占位: 数据集无分柱; 计算不使用
+        year:  { gan: yg as Gan, zhi: yz as Zhi },
+        month: { gan: mg as Gan, zhi: mz as Zhi },
+        day:   { gan: dg as Gan, zhi: dz as Zhi },
+        hour:  { gan: hg as Gan, zhi: hz as Zhi },
         sex,
       },
       truth: { ss, cg, cgss },

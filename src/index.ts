@@ -7,4 +7,5 @@ export * from "./season.ts";
 export * from "./kongwang.ts";
 export * from "./shensha/index.ts";
 export * from "./shishen/index.ts";
+export * from "./ganzhi/index.ts";
 export * from "./zizuo.ts";

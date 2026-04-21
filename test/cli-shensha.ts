@@ -48,11 +48,10 @@ function* iterSamples(): Generator<Sample> {
     yield {
       path: rel,
       input: {
-        year:   { gan: yg as Gan, zhi: yz as Zhi },
-        month:  { gan: mg as Gan, zhi: mz as Zhi },
-        day:    { gan: dg as Gan, zhi: dz as Zhi },
-        hour:   { gan: hg as Gan, zhi: hz as Zhi },
-        minute: { gan: hg as Gan, zhi: hz as Zhi }, // 占位: 数据集无分柱; 计算不使用
+        year:  { gan: yg as Gan, zhi: yz as Zhi },
+        month: { gan: mg as Gan, zhi: mz as Zhi },
+        day:   { gan: dg as Gan, zhi: dz as Zhi },
+        hour:  { gan: hg as Gan, zhi: hz as Zhi },
         sex,
       },
       truth: (truth as unknown[]).slice(0, 4).map(v => Array.isArray(v) ? (v as string[]) : []),
@@ -84,8 +83,8 @@ function main(): number {
 
     const diffs: { pillar: string; missing: string[]; extra: string[] }[] = [];
     PILLAR_KEYS.forEach((key, i) => {
-      const want = new Set((sample.truth[i] ?? []).filter(s => supported.has(s)));
-      const mine = new Set(got[key].filter(s => supported.has(s)));
+      const want = new Set<string>((sample.truth[i] ?? []).filter(s => supported.has(s)));
+      const mine = new Set<string>(got[key].filter(s => supported.has(s)));
       const missingArr = [...want].filter(s => !mine.has(s)).sort();
       const extraArr   = [...mine].filter(s => !want.has(s)).sort();
       if (missingArr.length || extraArr.length) {

@@ -22,6 +22,7 @@
   "scripts": {
     "shishen": "bun run test/cli-shishen.ts",
     "shensha": "bun run test/cli-shensha.ts",
+    "ganzhi": "bun run test/cli-ganzhi.ts",
     "clean": "rm -rf dist",
     "build": "mkdir -p dist && bun build ./src/index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json"
   },
