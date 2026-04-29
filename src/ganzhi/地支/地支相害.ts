@@ -9,8 +9,11 @@
  *
  * API 全名 "寅巳相害", state "相害".
  */
-import type { Pillar } from "../../types.ts";
-import { adjacent, collectZhis, posRange, type Finding } from "../common.ts";
+import type { Pillar, Zhi } from "../../types.ts";
+import {
+  adjacent, collectZhis, posRange, dissolversByZhi,
+  type ConflictFinding, type ExtraPillar,
+} from "../common.ts";
 
 const LIUHAI: Array<[string, string, string]> = [
   ["子", "未", "世家之害"],
@@ -30,14 +33,14 @@ const EXTRA_NOTES: Record<string, string> = {
   酉戌: "嫉妒克害; 头面生疮聋哑",
 };
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): ConflictFinding[] {
+  const out: ConflictFinding[] = [];
   const zhis = collectZhis(pillars);
   for (const [a, b, title] of LIUHAI) {
     const A = zhis.filter((z) => z.zhi === a);
     const B = zhis.filter((z) => z.zhi === b);
     for (const x of A) for (const y of B) {
-      out.push({
+      const f: ConflictFinding = {
         kind: "地支相害",
         name: `${a}${b}相害`,
         positions: posRange([x.pos, y.pos].sort((p, q) => p - q)),
@@ -46,7 +49,10 @@ function detect(pillars: Pillar[]): Finding[] {
         note: `${title}${EXTRA_NOTES[a + b] ? " · " + EXTRA_NOTES[a + b] : ""}`,
         mdKey: "相害",
         quality: "bad",
-      });
+      };
+      const dis = dissolversByZhi([a as Zhi, b as Zhi], extras);
+      if (dis.length) f.dissolved = dis;
+      out.push(f);
     }
   }
   return out;

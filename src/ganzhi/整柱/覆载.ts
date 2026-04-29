@@ -9,9 +9,11 @@
  * 通过 state 区分. 一柱内紧贴作用 —— close 恒为 true.
  */
 import type { Pillar, WuXing } from "../../types.ts";
-import { ganWuxing, zhiWuxing } from "../common.ts";
 import { GENERATES } from "../../wuxing.ts";
-import { POS_NAMES, type Finding } from "../common.ts";
+import {
+  POS_NAMES, ganWuxing, zhiWuxing,
+  type WholePillarFinding,
+} from "../common.ts";
 
 type FuZaiState = "同气" | "得覆" | "得载";
 
@@ -22,8 +24,8 @@ function classify(gw: WuXing, zw: WuXing): FuZaiState | null {
   return null;
 }
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[]): WholePillarFinding[] {
+  const out: WholePillarFinding[] = [];
   pillars.forEach((p, i) => {
     const gw = ganWuxing(p.gan);
     const zw = zhiWuxing(p.zhi);

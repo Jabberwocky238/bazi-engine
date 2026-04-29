@@ -5,8 +5,11 @@
  *
  * 不要求紧贴 —— 隔位也论相克. 紧贴与否由 Finding.close 反映.
  */
-import type { Pillar } from "../../types.ts";
-import { adjacent, collectGans, posRange, type Finding } from "../common.ts";
+import type { Gan, Pillar } from "../../types.ts";
+import {
+  adjacent, collectGans, posRange, dissolversByGan,
+  type ConflictFinding, type ExtraPillar,
+} from "../common.ts";
 
 /** 同性相克 10 对 (已涵盖 4 组冲). */
 const KE_PAIRS: Array<[string, string]> = [
@@ -17,8 +20,8 @@ const KE_PAIRS: Array<[string, string]> = [
   ["壬", "丙"], ["癸", "丁"],
 ];
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): ConflictFinding[] {
+  const out: ConflictFinding[] = [];
   const gans = collectGans(pillars);
   const seen = new Set<string>();
   for (const [g1, g2] of KE_PAIRS) {
@@ -29,7 +32,7 @@ function detect(pillars: Pillar[]): Finding[] {
       if (seen.has(key)) continue;
       seen.add(key);
       const close = adjacent(a.pos, b.pos);
-      out.push({
+      const f: ConflictFinding = {
         kind: "天干相克",
         name: `${g1}${g2}相克`,
         positions: posRange([a.pos, b.pos].sort((x, y) => x - y)),
@@ -37,7 +40,10 @@ function detect(pillars: Pillar[]): Finding[] {
         state: "相克",
         note: close ? "紧克, 作用直接" : "隔克, 作用渐进",
         quality: "bad",
-      });
+      };
+      const dis = dissolversByGan([g1 as Gan, g2 as Gan], extras);
+      if (dis.length) f.dissolved = dis;
+      out.push(f);
     }
   }
   return out;

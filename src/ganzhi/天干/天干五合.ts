@@ -12,12 +12,12 @@
  * 化气硬条件 (md "真化") 在 state 里以 "真化"/"合绊"/"远合" 区分.
  * 即便触发 争合 / 妒合, API 仍单独输出 基础合化 条目, 此处与之对齐.
  */
-import type { Pillar, WuXing } from "../../types.ts";
-import { zhiWuxing } from "../common.ts";
+import type { Gan, Pillar, WuXing } from "../../types.ts";
 import { GENERATES } from "../../wuxing.ts";
 import {
-  adjacent, collectGans, posRange, POS_NAMES,
-  type Finding,
+  adjacent, collectGans, posRange, POS_NAMES, zhiWuxing,
+  impactorsByGan,
+  type HeFinding, type ZhengHeFinding, type ExtraPillar,
 } from "../common.ts";
 
 /** [gan1, gan2, 化气五行, 别名]. */
@@ -29,8 +29,8 @@ const WUHE: Array<[string, string, WuXing, string]> = [
   ["戊", "癸", "火", "无情之合"],
 ];
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): (HeFinding | ZhengHeFinding)[] {
+  const out: (HeFinding | ZhengHeFinding)[] = [];
   const gans = collectGans(pillars);
 
   for (const [g1, g2, hua, qing] of WUHE) {
@@ -43,7 +43,7 @@ function detect(pillars: Pillar[]): Finding[] {
       out.push({
         kind: "争合", name: `争合 ${g1}${g1}${g2}`,
         positions: [...m1, ...m2].sort((a, b) => a.pos - b.pos).map((s) => POS_NAMES[s.pos]!).join(""),
-        close: false, state: "争合",
+        state: "争合",
         note: "两个相同天干争合一字 —— 感情纠葛、合作拆散、财来财去",
         mdKey: "争合", quality: "bad",
       });
@@ -52,7 +52,7 @@ function detect(pillars: Pillar[]): Finding[] {
       out.push({
         kind: "争合", name: `争合 ${g2}${g2}${g1}`,
         positions: [...m2, ...m1].sort((a, b) => a.pos - b.pos).map((s) => POS_NAMES[s.pos]!).join(""),
-        close: false, state: "争合",
+        state: "争合",
         note: "两个相同天干争合一字 —— 感情纠葛、合作拆散、财来财去",
         mdKey: "争合", quality: "bad",
       });
@@ -73,7 +73,7 @@ function detect(pillars: Pillar[]): Finding[] {
       canHua = supports(zwA) || supports(zwB) || supports(zwM);
     }
 
-    out.push({
+    const f: HeFinding = {
       kind: "天干五合",
       name: `${g1}${g2}合化${hua}`,
       positions: posRange([pair.a.pos, pair.b.pos].sort((x, y) => x - y)),
@@ -86,7 +86,10 @@ function detect(pillars: Pillar[]): Finding[] {
           ? `${qing} · 紧贴相合但地支不引化, 贪合忘克、两干力减`
           : `${qing} · 隔位虚合, 作用微弱`,
       quality: "neutral",
-    });
+    };
+    const imp = impactorsByGan([g1 as Gan, g2 as Gan], extras);
+    if (imp.length) f.impacted = imp;
+    out.push(f);
   }
 
   return out;

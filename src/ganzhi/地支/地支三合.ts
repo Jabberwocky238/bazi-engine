@@ -13,8 +13,8 @@
  */
 import type { Pillar, WuXing, Zhi } from "../../types.ts";
 import {
-  adjacent, hasGan, isGanTou, posRange,
-  type Finding,
+  adjacent, hasGan, isGanTou, posRange, impactorsByZhi,
+  type HeFinding, type ExtraPillar,
 } from "../common.ts";
 
 /** [长生, 帝旺, 墓库, 化气]. */
@@ -36,15 +36,21 @@ const YIN_GAN: Partial<Record<WuXing, string>> = {
  */
 const BANHE_SKIP: ReadonlySet<string> = new Set(["寅午", "午寅"]);
 
+function withImpacted(f: HeFinding, zhis: Zhi[], extras: ExtraPillar[]): HeFinding {
+  const imp = impactorsByZhi(zhis, extras);
+  if (imp.length) f.impacted = imp;
+  return f;
+}
+
 function emitBanhe(
-  out: Finding[], pillars: Pillar[],
+  out: HeFinding[], pillars: Pillar[], extras: ExtraPillar[],
   x: Zhi, y: Zhi, hua: WuXing,
   iX: number, iY: number,
 ): void {
   if (BANHE_SKIP.has(`${x}${y}`)) return;
   const close = adjacent(iX, iY);
   const canHua = close && isGanTou(pillars, hua);
-  out.push({
+  out.push(withImpacted({
     kind: "地支三合",
     name: `${x}${y}半合${hua}局`,
     positions: posRange([iX, iY].sort((a, b) => a - b)),
@@ -53,11 +59,11 @@ function emitBanhe(
     state: `半合${hua}局`,
     note: close ? "紧贴半合" : "隔位半合, 力弱",
     quality: "neutral",
-  });
+  }, [x, y], extras));
 }
 
 function emitGonghe(
-  out: Finding[], pillars: Pillar[],
+  out: HeFinding[], pillars: Pillar[], extras: ExtraPillar[],
   a: Zhi, c: Zhi, b: Zhi, hua: WuXing,
   iA: number, iC: number,
 ): void {
@@ -66,7 +72,7 @@ function emitGonghe(
   const hasYinGan = !!needGan && hasGan(pillars, needGan);
 
   // 拱合 —— 不要求透干, 始终输出
-  out.push({
+  out.push(withImpacted({
     kind: "地支三合",
     name: `${a}${c}拱合${b}`,
     positions: posRange([iA, iC].sort((x, y) => x - y)),
@@ -77,11 +83,11 @@ function emitGonghe(
       ? `透 ${needGan} 引化, 拱出 ${b}`
       : `需透 ${needGan} 方能拱出 ${b}`,
     quality: "neutral",
-  });
+  }, [a, c], extras));
 
   // 暗三合 —— 仅当透中神阴干时追加输出 (与 拱合 并存)
   if (hasYinGan && needGan) {
-    out.push({
+    out.push(withImpacted({
       kind: "地支三合",
       name: `${a}${c}见${needGan}暗三合`,
       positions: posRange([iA, iC].sort((x, y) => x - y)),
@@ -90,12 +96,12 @@ function emitGonghe(
       state: "暗三合",
       note: `${a}${c} 长生+墓 且透中神阴干 ${needGan} → 暗成三合`,
       quality: "neutral",
-    });
+    }, [a, c], extras));
   }
 }
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): HeFinding[] {
+  const out: HeFinding[] = [];
   const zhiSet = pillars.map((p) => p.zhi);
 
   for (const [a, b, c, hua] of SANHE) {
@@ -110,7 +116,7 @@ function detect(pillars: Pillar[]): Finding[] {
       const close = adjacent(pos[0]!, pos[1]!) && adjacent(pos[1]!, pos[2]!);
       const zhongqiAtMonth = iB === 1;
       const canHua = zhongqiAtMonth && isGanTou(pillars, hua);
-      out.push({
+      out.push(withImpacted({
         kind: "地支三合",
         name: `${a}${b}${c}三合${hua}局`,
         positions: posRange(pos),
@@ -122,13 +128,13 @@ function detect(pillars: Pillar[]): Finding[] {
           : !zhongqiAtMonth ? `中神 ${b} 未占月令, 合而不化`
                             : `天干无 ${hua} 透出, 合而不化`,
         quality: "neutral",
-      });
+      }, [a, b, c], extras));
     }
 
     // 所有 pair 子集 —— 无论齐全与否都独立输出 (对齐 API)
-    if (hasA && hasB) emitBanhe(out, pillars, a, b, hua, iA, iB);   // 生+帝旺 半合
-    if (hasB && hasC) emitBanhe(out, pillars, b, c, hua, iB, iC);   // 帝旺+墓 半合
-    if (hasA && hasC) emitGonghe(out, pillars, a, c, b, hua, iA, iC); // 生+墓 拱合
+    if (hasA && hasB) emitBanhe(out, pillars, extras, a, b, hua, iA, iB);   // 生+帝旺 半合
+    if (hasB && hasC) emitBanhe(out, pillars, extras, b, c, hua, iB, iC);   // 帝旺+墓 半合
+    if (hasA && hasC) emitGonghe(out, pillars, extras, a, c, b, hua, iA, iC); // 生+墓 拱合
   }
   return out;
 }

@@ -13,7 +13,10 @@
  * API 全名 "巳酉暗合", state "暗合".
  */
 import type { Pillar, Zhi } from "../../types.ts";
-import { adjacent, collectZhis, posRange, type Finding } from "../common.ts";
+import {
+  adjacent, collectZhis, posRange, impactorsByZhi,
+  type HeFinding, type ExtraPillar,
+} from "../common.ts";
 
 /** [a, b, 藏干合对]. */
 const AN_HE: Array<[Zhi, Zhi, string]> = [
@@ -28,14 +31,14 @@ const AN_HE: Array<[Zhi, Zhi, string]> = [
   ["午", "亥", "丁壬合"],
 ];
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): HeFinding[] {
+  const out: HeFinding[] = [];
   const zhis = collectZhis(pillars);
   for (const [a, b, note] of AN_HE) {
     const A = zhis.filter((z) => z.zhi === a);
     const B = zhis.filter((z) => z.zhi === b);
     for (const x of A) for (const y of B) {
-      out.push({
+      const f: HeFinding = {
         kind: "地支暗合",
         name: `${a}${b}暗合`,
         positions: posRange([x.pos, y.pos].sort((p, q) => p - q)),
@@ -43,7 +46,10 @@ function detect(pillars: Pillar[]): Finding[] {
         state: "暗合",
         note: `藏干 ${note} · 暗中相合`,
         quality: "neutral",
-      });
+      };
+      const imp = impactorsByZhi([a, b], extras);
+      if (imp.length) f.impacted = imp;
+      out.push(f);
     }
   }
   return out;

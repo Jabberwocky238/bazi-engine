@@ -14,11 +14,16 @@
  *   "酉酉相刑" / "辰辰相刑" ...                     state "自刑"
  */
 import type { Pillar, Zhi } from "../../types.ts";
-import { zhiWuxing } from "../common.ts";
 import {
-  adjacent, isGanTou, posRange,
-  type Finding,
+  adjacent, isGanTou, posRange, zhiWuxing, dissolversByZhi,
+  type ConflictFinding, type ExtraPillar,
 } from "../common.ts";
+
+function withDissolved(f: ConflictFinding, zhis: Zhi[], extras: ExtraPillar[]): ConflictFinding {
+  const dis = dissolversByZhi(zhis, extras);
+  if (dis.length) f.dissolved = dis;
+  return f;
+}
 
 const ZIXING_ZHIS: ReadonlySet<Zhi> = new Set<Zhi>(["辰", "午", "酉", "亥"]);
 
@@ -35,8 +40,8 @@ const SAN_XING: Array<[Zhi, Zhi, Zhi, string]> = [
   ["寅", "巳", "申", "寅巳申"],  // 无恩之刑 (驿马刑)
 ];
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): ConflictFinding[] {
+  const out: ConflictFinding[] = [];
   const zhiSet = pillars.map((p) => p.zhi);
   const idxOf = (z: string): number => zhiSet.indexOf(z as Zhi);
 
@@ -48,7 +53,7 @@ function detect(pillars: Pillar[]): Finding[] {
     if (hasA && hasB && hasC) {
       const idxs = [iA, iB, iC].sort((x, y) => x - y);
       const close = adjacent(idxs[0]!, idxs[1]!) && adjacent(idxs[1]!, idxs[2]!);
-      out.push({
+      out.push(withDissolved({
         kind: "地支相刑",
         name: `${label}三刑`,
         positions: posRange(idxs),
@@ -58,7 +63,7 @@ function detect(pillars: Pillar[]): Finding[] {
           ? "恃势之刑 · 土越刑越旺, 伤藏干癸水、辛金、乙木; 脾胃皮肤"
           : "无恩之刑 · 驿马三支互刑, 事业环境频变、恩情难续, 防牢狱血光",
         mdKey: `${label}三刑`, quality: "bad",
-      });
+      }, [a, b, c], extras));
     }
 
     // 3 个 pair 子集都单独出
@@ -67,7 +72,7 @@ function detect(pillars: Pillar[]): Finding[] {
     if (hasB && hasC) pairs.push([b, c, iB, iC]);
     if (hasA && hasC) pairs.push([a, c, iA, iC]);
     for (const [p1, p2, i1, i2] of pairs) {
-      out.push({
+      out.push(withDissolved({
         kind: "地支相刑",
         name: `${p1}${p2}相刑`,
         positions: posRange([i1, i2].sort((x, y) => x - y)),
@@ -75,14 +80,14 @@ function detect(pillars: Pillar[]): Finding[] {
         state: "相刑",
         note: `${label} 之 ${p1}${p2} 相刑`,
         mdKey: `${label}三刑`, quality: "bad",
-      });
+      }, [p1, p2], extras));
     }
   }
 
   // 子卯 刑
   const iZi = idxOf("子"), iMao = idxOf("卯");
   if (iZi >= 0 && iMao >= 0) {
-    out.push({
+    out.push(withDissolved({
       kind: "地支相刑",
       name: "子卯相刑",
       positions: posRange([iZi, iMao].sort((a, b) => a - b)),
@@ -90,7 +95,7 @@ function detect(pillars: Pillar[]): Finding[] {
       state: "相刑",
       note: "无礼之刑 · 母子相刑, 水生木变相克; 桃花纠纷、肝胆神经",
       mdKey: "子卯刑", quality: "bad",
-    });
+    }, ["子", "卯"], extras));
   }
 
   // 自刑
@@ -104,7 +109,7 @@ function detect(pillars: Pillar[]): Finding[] {
     if (idxs.length >= 2) {
       const wx = zhiWuxing(zhi as Zhi);
       const touBenqi = isGanTou(pillars, wx);
-      out.push({
+      out.push(withDissolved({
         kind: "地支相刑",
         name: `${zhi}${zhi}相刑`,
         positions: posRange(idxs),
@@ -112,7 +117,7 @@ function detect(pillars: Pillar[]): Finding[] {
         state: "自刑",
         note: `${SELF_XING_DESC[zhi] ?? ""} · ${touBenqi ? "透本气, 力加倍" : "本气不透"}`,
         mdKey: "自刑", quality: "bad",
-      });
+      }, [zhi as Zhi], extras));
     }
   }
 

@@ -8,7 +8,10 @@
  * 一个 三支齐全 的会, 同时输出 三会 + 拱会 两条.
  */
 import type { Pillar, WuXing, Zhi } from "../../types.ts";
-import { hasGan, isGanTou, posRange, type Finding } from "../common.ts";
+import {
+  hasGan, isGanTou, posRange, impactorsByZhi,
+  type HeFinding, type ExtraPillar,
+} from "../common.ts";
 
 /** [首, 中, 末, 化气, 方位]. */
 const SANHUI: Array<[Zhi, Zhi, Zhi, WuXing, string]> = [
@@ -23,8 +26,14 @@ const MID_YIN_GAN: Partial<Record<WuXing, string>> = {
   木: "乙", 火: "丁", 金: "辛", 水: "癸",
 };
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function withImpacted(f: HeFinding, zhis: Zhi[], extras: ExtraPillar[]): HeFinding {
+  const imp = impactorsByZhi(zhis, extras);
+  if (imp.length) f.impacted = imp;
+  return f;
+}
+
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): HeFinding[] {
+  const out: HeFinding[] = [];
   const zhiSet = pillars.map((p) => p.zhi);
 
   for (const [a, b, c, hua, fang] of SANHUI) {
@@ -37,7 +46,7 @@ function detect(pillars: Pillar[]): Finding[] {
     if (hasA && hasB && hasC) {
       const pos = [iA, iB, iC].sort((x, y) => x - y);
       const canHua = isGanTou(pillars, hua);
-      out.push({
+      out.push(withImpacted({
         kind: "地支三会",
         name: `${a}${b}${c}三会${hua}局`,
         positions: posRange(pos),
@@ -48,14 +57,14 @@ function detect(pillars: Pillar[]): Finding[] {
           ? `${fang}方局, 天干透 ${hua} 引化, 力量最大但最不稳定`
           : `${fang}方局已聚, 但天干未透 ${hua}`,
         quality: "neutral",
-      });
+      }, [a, b, c], extras));
     }
 
     // 首+末 → 拱会 (不要求透干, 始终输出)
     if (hasA && hasC) {
       const needGan = MID_YIN_GAN[hua];
       const hasYinGan = !!needGan && hasGan(pillars, needGan);
-      out.push({
+      out.push(withImpacted({
         kind: "地支三会",
         name: `${a}${c}拱会`,
         positions: posRange([iA, iC].sort((x, y) => x - y)),
@@ -66,11 +75,11 @@ function detect(pillars: Pillar[]): Finding[] {
           ? `透 ${needGan} 引化, 拱出 ${b}`
           : `需透 ${needGan} 方能拱出 ${b}`,
         quality: "neutral",
-      });
+      }, [a, c], extras));
 
       // 暗三会 —— 透中神阴干时追加 (与 拱会 并存)
       if (hasYinGan && needGan) {
-        out.push({
+        out.push(withImpacted({
           kind: "地支三会",
           name: `${a}${c}见${needGan}暗三会`,
           positions: posRange([iA, iC].sort((x, y) => x - y)),
@@ -79,7 +88,7 @@ function detect(pillars: Pillar[]): Finding[] {
           state: "暗三会",
           note: `${a}${c} 首+末 且透中神阴干 ${needGan} → 暗成三会`,
           quality: "neutral",
-        });
+        }, [a, c], extras));
       }
     }
   }

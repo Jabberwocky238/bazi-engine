@@ -4,8 +4,11 @@
  *
  * API 全名 "子午相冲", state "相冲".
  */
-import type { Pillar } from "../../types.ts";
-import { adjacent, collectZhis, posRange, type Finding } from "../common.ts";
+import type { Pillar, Zhi } from "../../types.ts";
+import {
+  adjacent, collectZhis, posRange, dissolversByZhi,
+  type ConflictFinding, type ExtraPillar,
+} from "../common.ts";
 
 const ZHI_CHONG: Array<[string, string]> = [
   ["子", "午"], ["卯", "酉"], ["寅", "申"], ["巳", "亥"], ["辰", "戌"], ["丑", "未"],
@@ -22,8 +25,8 @@ function subNote(z1: string, z2: string): string {
   return "";
 }
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): ConflictFinding[] {
+  const out: ConflictFinding[] = [];
   const zhis = collectZhis(pillars);
   for (const [z1, z2] of ZHI_CHONG) {
     const A = zhis.filter((z) => z.zhi === z1);
@@ -31,7 +34,7 @@ function detect(pillars: Pillar[]): Finding[] {
     for (const a of A) for (const b of B) {
       const close = adjacent(a.pos, b.pos);
       const sub = subNote(z1, z2);
-      out.push({
+      const f: ConflictFinding = {
         kind: "地支相冲",
         name: `${z1}${z2}相冲`,
         positions: posRange([a.pos, b.pos].sort((x, y) => x - y)),
@@ -39,7 +42,10 @@ function detect(pillars: Pillar[]): Finding[] {
         state: "相冲",
         note: `${sub}${sub ? " · " : ""}${close ? "紧贴力大" : "隔位力弱"}; 冲忌为吉, 冲用为凶`,
         quality: "bad",
-      });
+      };
+      const dis = dissolversByZhi([z1 as Zhi, z2 as Zhi], extras);
+      if (dis.length) f.dissolved = dis;
+      out.push(f);
     }
   }
   return out;

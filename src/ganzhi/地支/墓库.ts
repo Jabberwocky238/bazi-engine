@@ -13,8 +13,11 @@
  *   默认:
  *     - 墓气未透 → 闭库
  */
-import type { Pillar } from "../../types.ts";
-import { POS_NAMES, hasGan, type Finding } from "../common.ts";
+import type { Pillar, Zhi } from "../../types.ts";
+import {
+  POS_NAMES, hasGan, openersByZhi,
+  type MuKuFinding, type ExtraPillar,
+} from "../common.ts";
 
 interface KuInfo {
   readonly benqi: string;
@@ -47,8 +50,8 @@ const TIAN_HE_CLOSE: Readonly<Record<string, string>> = {
   戊癸: "辰", 乙庚: "未", 丁壬: "戌", 丙辛: "丑",
 };
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): MuKuFinding[] {
+  const out: MuKuFinding[] = [];
   const zhiSet = pillars.map((p) => p.zhi);
 
   for (const [zhi, ku] of Object.entries(MUKU)) {
@@ -102,15 +105,17 @@ function detect(pillars: Pillar[]): Finding[] {
       note = `${ku.muqi}(${ku.muqiWx}) 未透 → 库中 ${ku.muqiWx} 封存, 需岁运冲开`;
     }
 
-    out.push({
+    const f: MuKuFinding = {
       kind: "墓库",
       name: `${zhi} · ${ku.name}`,
       positions: POS_NAMES[idx]!,
-      close: false,
       state,
       note,
       quality: "neutral",
-    });
+    };
+    const opn = openersByZhi(zhi as Zhi, extras);
+    if (opn.length) f.opened = opn;
+    out.push(f);
   }
   return out;
 }

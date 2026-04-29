@@ -9,7 +9,7 @@
  *     保留给整体扫描的 地支暗合.detect 处理.
  */
 import type { Gan, Zhi, WuXing } from "../types.ts";
-import { GAN_WUXING, type ExtraInteractionKind } from "./common.ts";
+import { GAN_WUXING } from "./common.ts";
 import { CONTROLS } from "../wuxing.ts";
 
 // ————————————————————————————————————————————————————————
@@ -104,8 +104,11 @@ const TIAN_HE: Readonly<Record<Gan, readonly [Gan, WuXing]>> = {
 // 公开 API
 // ————————————————————————————————————————————————————————
 
-/** 与 common.ts ExtraInteractionKind 同义, 别名留作内部用. */
-export type PairKind = ExtraInteractionKind;
+export type PairKind =
+  | "六合" | "半三合" | "半三会"
+  | "六冲" | "六害" | "六破"
+  | "相刑" | "自刑"
+  | "天干五合" | "天干相克";
 
 export interface PairResult {
   kind: PairKind;

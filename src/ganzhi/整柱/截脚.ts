@@ -10,12 +10,14 @@
  * 一柱内紧贴作用 —— close 恒为 true.
  */
 import type { Pillar } from "../../types.ts";
-import { ganWuxing, zhiWuxing } from "../common.ts";
 import { CONTROLS } from "../../wuxing.ts";
-import { POS_NAMES, type Finding } from "../common.ts";
+import {
+  POS_NAMES, ganWuxing, zhiWuxing,
+  type WholePillarFinding,
+} from "../common.ts";
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[]): WholePillarFinding[] {
+  const out: WholePillarFinding[] = [];
   pillars.forEach((p, i) => {
     const gw = ganWuxing(p.gan);
     const zw = zhiWuxing(p.zhi);

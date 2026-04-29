@@ -6,8 +6,11 @@
  *
  * API 全名 "辰丑相破", state "相破". 力量较弱.
  */
-import type { Pillar } from "../../types.ts";
-import { adjacent, collectZhis, posRange, type Finding } from "../common.ts";
+import type { Pillar, Zhi } from "../../types.ts";
+import {
+  adjacent, collectZhis, posRange, dissolversByZhi,
+  type ConflictFinding, type ExtraPillar,
+} from "../common.ts";
 
 const LIUPO: Array<[string, string, string]> = [
   ["子", "酉", "四帝旺之破"],
@@ -18,14 +21,14 @@ const LIUPO: Array<[string, string, string]> = [
   ["未", "戌", "四墓库之破"],
 ];
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): ConflictFinding[] {
+  const out: ConflictFinding[] = [];
   const zhis = collectZhis(pillars);
   for (const [a, b, title] of LIUPO) {
     const A = zhis.filter((z) => z.zhi === a);
     const B = zhis.filter((z) => z.zhi === b);
     for (const x of A) for (const y of B) {
-      out.push({
+      const f: ConflictFinding = {
         kind: "地支相破",
         name: `${a}${b}相破`,
         positions: posRange([x.pos, y.pos].sort((p, q) => p - q)),
@@ -33,7 +36,10 @@ function detect(pillars: Pillar[]): Finding[] {
         state: "相破",
         note: `${title} · 力量较弱, 仅作参考`,
         quality: "bad",
-      });
+      };
+      const dis = dissolversByZhi([a as Zhi, b as Zhi], extras);
+      if (dis.length) f.dissolved = dis;
+      out.push(f);
     }
   }
   return out;

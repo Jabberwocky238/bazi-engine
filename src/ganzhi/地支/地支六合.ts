@@ -10,10 +10,10 @@
  * API 表述: 全名 "子丑合化土", state 形如 "合化土" (六合皆按合化描述).
  * 化气硬条件 (紧贴 + 天干透化气) 由 Finding.transformed 反映.
  */
-import type { Pillar, WuXing } from "../../types.ts";
+import type { Pillar, WuXing, Zhi } from "../../types.ts";
 import {
-  adjacent, collectZhis, isGanTou, posRange,
-  type Finding,
+  adjacent, collectZhis, isGanTou, posRange, impactorsByZhi,
+  type HeFinding, type ExtraPillar,
 } from "../common.ts";
 
 const LIUHE: Array<[string, string, string, string]> = [
@@ -27,8 +27,8 @@ const LIUHE: Array<[string, string, string, string]> = [
 
 const WUXING_CHARS: readonly WuXing[] = ["木", "火", "土", "金", "水"];
 
-function detect(pillars: Pillar[]): Finding[] {
-  const out: Finding[] = [];
+function detect(pillars: Pillar[], extras: ExtraPillar[] = []): HeFinding[] {
+  const out: HeFinding[] = [];
   const zhis = collectZhis(pillars);
   for (const [z1, z2, hua, alias] of LIUHE) {
     const A = zhis.filter((z) => z.zhi === z1);
@@ -37,7 +37,7 @@ function detect(pillars: Pillar[]): Finding[] {
       const close = adjacent(a.pos, b.pos);
       const targetWx = [...hua].filter((c): c is WuXing => (WUXING_CHARS as readonly string[]).includes(c));
       const canHua = close && targetWx.some((w) => isGanTou(pillars, w));
-      out.push({
+      const f: HeFinding = {
         kind: "地支六合",
         name: `${z1}${z2}合化${hua}`,
         positions: posRange([a.pos, b.pos].sort((x, y) => x - y)),
@@ -46,7 +46,10 @@ function detect(pillars: Pillar[]): Finding[] {
         state: `合化${hua}`,
         note: `${alias} · ${canHua ? "天干透化气, 真合化" : close ? "紧贴合绊, 天干无引化" : "隔位虚合"}`,
         quality: "neutral",
-      });
+      };
+      const imp = impactorsByZhi([z1 as Zhi, z2 as Zhi], extras);
+      if (imp.length) f.impacted = imp;
+      out.push(f);
     }
   }
   return out;
