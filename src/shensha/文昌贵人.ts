@@ -10,9 +10,9 @@ const WEN_CHANG: Readonly<Record<Gan, Zhi>> = {
   壬:"寅", 癸:"卯",
 };
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
-  return z === WEN_CHANG[b.day.gan] || z === WEN_CHANG[b.year.gan];
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
+  return z === WEN_CHANG[pillars[2].gan] || z === WEN_CHANG[pillars[0].gan];
 };
 
 export const 文昌贵人 = { name: "文昌贵人", check } as const;

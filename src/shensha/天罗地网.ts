@@ -12,13 +12,13 @@ const PARTNER: Partial<Record<Zhi, Zhi>> = {
   辰:"巳", 巳:"辰", 戌:"亥", 亥:"戌",
 };
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
   const partner = PARTNER[z];
   if (!partner) return false;
-  if (i === 0) return b.day.zhi === partner;
-  if (i === 2) return b.year.zhi === partner;
-  return b.year.zhi === partner || b.day.zhi === partner;
+  if (i === 0) return pillars[2].zhi === partner;
+  if (i === 2) return pillars[0].zhi === partner;
+  return pillars[0].zhi === partner || pillars[2].zhi === partner;
 };
 
 export const 天罗地网 = { name: "天罗地网", check } as const;

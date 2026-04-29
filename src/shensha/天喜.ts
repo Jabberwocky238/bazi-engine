@@ -7,6 +7,6 @@ const TIAN_XI: Readonly<Record<Zhi, Zhi>> = {
   午:"卯", 未:"寅", 申:"丑", 酉:"子", 戌:"亥", 亥:"戌",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === TIAN_XI[b.year.zhi];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === TIAN_XI[pillars[0].zhi];
 
 export const 天喜 = { name: "天喜", check } as const;

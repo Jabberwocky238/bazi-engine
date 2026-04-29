@@ -7,7 +7,7 @@ const YUE_DE: Readonly<Record<TriadKey, Gan>> = {
   "寅午戌":"丙", "申子辰":"壬", "亥卯未":"甲", "巳酉丑":"庚",
 };
 
-const check: ShenshaCheck = (b, i) =>
-  pillarAt(b, i).gan === YUE_DE[triadOf(b.month.zhi)];
+const check: ShenshaCheck = (pillars, i) =>
+  pillarAt(pillars, i).gan === YUE_DE[triadOf(pillars[1].zhi)];
 
 export const 月德贵人 = { name: "月德贵人", check } as const;

@@ -14,9 +14,9 @@ const TAI_JI: Readonly<Record<Gan, readonly Zhi[]>> = {
   壬:["巳","申"], 癸:["巳","申"],
 };
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
-  return TAI_JI[b.day.gan].includes(z) || TAI_JI[b.year.gan].includes(z);
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
+  return TAI_JI[pillars[2].gan].includes(z) || TAI_JI[pillars[0].gan].includes(z);
 };
 
 export const 太极贵人 = { name: "太极贵人", check } as const;

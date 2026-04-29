@@ -10,13 +10,15 @@ import { pillarAt, zhiOffset, type ShenshaCheck } from "./common.ts";
 const OFFSET_YANG_MALE_YIN_FEMALE = 7;
 const OFFSET_YIN_MALE_YANG_FEMALE = 5;
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i, sex) => {
   if (i === 0) return false;
-  if (b.sex !== 0 && b.sex !== 1) return false;
-  const yangYearGan = GAN.indexOf(b.year.gan) % 2 === 0;
-  const yangMaleOrYinFemale = (b.sex === 1 && yangYearGan) || (b.sex === 0 && !yangYearGan);
+  if (sex !== 0 && sex !== 1) return false;
+  const target = pillarAt(pillars, i);
+  if (!target) return false;
+  const yangYearGan = GAN.indexOf(pillars[0].gan) % 2 === 0;
+  const yangMaleOrYinFemale = (sex === 1 && yangYearGan) || (sex === 0 && !yangYearGan);
   const off = yangMaleOrYinFemale ? OFFSET_YANG_MALE_YIN_FEMALE : OFFSET_YIN_MALE_YANG_FEMALE;
-  return pillarAt(b, i).zhi === zhiOffset(b.year.zhi, off);
+  return target.zhi === zhiOffset(pillars[0].zhi, off);
 };
 
 export const 元辰 = { name: "元辰", check } as const;

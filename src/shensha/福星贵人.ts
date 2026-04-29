@@ -20,9 +20,9 @@ const FU_XING: Readonly<Record<Gan, readonly Zhi[]>> = {
   癸:["丑","卯"],
 };
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
-  return FU_XING[b.day.gan].includes(z) || FU_XING[b.year.gan].includes(z);
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
+  return FU_XING[pillars[2].gan].includes(z) || FU_XING[pillars[0].gan].includes(z);
 };
 
 export const 福星贵人 = { name: "福星贵人", check } as const;

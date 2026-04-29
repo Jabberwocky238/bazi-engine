@@ -2,10 +2,10 @@
 import { nayinOf } from "../nayin.ts";
 import { type ShenshaCheck } from "./common.ts";
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;
-  if (nayinOf(b.year.gan, b.year.zhi) !== "火") return false;
-  return b.day.zhi === "戌" || b.day.zhi === "亥";
+  if (nayinOf(pillars[0].gan, pillars[0].zhi) !== "火") return false;
+  return pillars[2].zhi === "戌" || pillars[2].zhi === "亥";
 };
 
 export const 天罗 = { name: "天罗", check } as const;

@@ -6,9 +6,9 @@ const DAYS: readonly GanZhi[] = [
   "丙午","丁未","戊子","戊午","己丑","己未",
 ] as const;
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;
-  return DAYS.includes(gzOf(b.day));
+  return DAYS.includes(gzOf(pillars[2]));
 };
 
 export const 六秀日 = { name: "六秀日", check } as const;

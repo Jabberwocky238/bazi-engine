@@ -12,10 +12,10 @@ const XUE_TANG_ZHI: Readonly<Record<NayinWuxing, Zhi>> = {
   金:"巳", 木:"亥", 水:"申", 土:"申", 火:"寅",
 };
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i === 0) return false;
-  const p = pillarAt(b, i);
-  const ny = nayinOf(b.year.gan, b.year.zhi);
+  const p = pillarAt(pillars, i);
+  const ny = nayinOf(pillars[0].gan, pillars[0].zhi);
   if (p.zhi !== XUE_TANG_ZHI[ny]) return false;
   return gzOf(p) !== ZHENG_XUE_TANG_GZ[ny];
 };

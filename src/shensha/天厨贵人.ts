@@ -13,9 +13,9 @@ const TIAN_CHU: Readonly<Record<Gan, Zhi>> = {
   壬:"寅", 癸:"卯",
 };
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
-  return z === TIAN_CHU[b.day.gan] || z === TIAN_CHU[b.year.gan];
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
+  return z === TIAN_CHU[pillars[2].gan] || z === TIAN_CHU[pillars[0].gan];
 };
 
 export const 天厨贵人 = { name: "天厨贵人", check } as const;

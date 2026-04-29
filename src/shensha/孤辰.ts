@@ -9,6 +9,6 @@ const GU_CHEN: Readonly<Record<Zhi, Zhi>> = {
   申:"亥", 酉:"亥", 戌:"亥",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === GU_CHEN[b.year.zhi];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === GU_CHEN[pillars[0].zhi];
 
 export const 孤辰 = { name: "孤辰", check } as const;

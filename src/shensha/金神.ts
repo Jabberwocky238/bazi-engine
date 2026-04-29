@@ -8,10 +8,12 @@ import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const JIN_SHEN_GANZHI: readonly GanZhi[] = ["乙丑","己巳","癸酉"] as const;
 
-const check: ShenshaCheck = (b, i) => {
-  if (i === 2) return JIN_SHEN_GANZHI.includes(gzOf(b.day));
+const check: ShenshaCheck = (pillars, i) => {
+  if (i === 2) return JIN_SHEN_GANZHI.includes(gzOf(pillars[2]));
   if (i === 3) {
-    return JIN_SHEN_GANZHI.includes(gzOf(b.hour)) && (b.day.gan === "甲" || b.day.gan === "己");
+    const hour = pillars[3];
+    if (!hour) return false;
+    return JIN_SHEN_GANZHI.includes(gzOf(hour)) && (pillars[2].gan === "甲" || pillars[2].gan === "己");
   }
   return false;
 };

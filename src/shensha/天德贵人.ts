@@ -12,9 +12,9 @@ const TIAN_DE: Readonly<Record<Zhi, Gan | Zhi>> = {
 const isGan = (x: string): x is Gan => (GAN as readonly string[]).includes(x);
 const isZhi = (x: string): x is Zhi => (ZHI as readonly string[]).includes(x);
 
-const check: ShenshaCheck = (b, i) => {
-  const p = pillarAt(b, i);
-  const t = TIAN_DE[b.month.zhi];
+const check: ShenshaCheck = (pillars, i) => {
+  const p = pillarAt(pillars, i);
+  const t = TIAN_DE[pillars[1].zhi];
   return (isGan(t) && p.gan === t) || (isZhi(t) && p.zhi === t);
 };
 

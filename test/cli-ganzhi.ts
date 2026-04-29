@@ -18,7 +18,7 @@ import {
   GAN, ZHI, type Gan, type Zhi, type Pillar,
 } from "../src/index.ts";
 
-const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname.replace(/^\//, "");
+const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname;
 const GAN_SET: ReadonlySet<string> = new Set(GAN);
 const ZHI_SET: ReadonlySet<string> = new Set(ZHI);
 

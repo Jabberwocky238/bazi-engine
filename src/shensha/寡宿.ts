@@ -9,6 +9,6 @@ const GUA_SU: Readonly<Record<Zhi, Zhi>> = {
   申:"未", 酉:"未", 戌:"未",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === GUA_SU[b.year.zhi];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === GUA_SU[pillars[0].zhi];
 
 export const 寡宿 = { name: "寡宿", check } as const;

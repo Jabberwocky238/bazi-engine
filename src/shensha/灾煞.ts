@@ -4,10 +4,10 @@ import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const NAME = "灾煞";
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i === 0) return false;
-  const z = pillarAt(b, i).zhi;
-  const yTarget = TRIAD_MAP[triadOf(b.year.zhi)][NAME];
+  const z = pillarAt(pillars, i).zhi;
+  const yTarget = TRIAD_MAP[triadOf(pillars[0].zhi)][NAME];
   return yTarget !== undefined && z === yTarget;
 };
 

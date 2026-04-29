@@ -7,9 +7,9 @@ const DAYS: Readonly<Record<Season, GanZhi>> = {
   春:"乙卯", 夏:"丙午", 秋:"辛酉", 冬:"壬子",
 };
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;
-  return gzOf(b.day) === DAYS[seasonOf(b.month.zhi)];
+  return gzOf(pillars[2]) === DAYS[seasonOf(pillars[1].zhi)];
 };
 
 export const 天转日 = { name: "天转日", check } as const;

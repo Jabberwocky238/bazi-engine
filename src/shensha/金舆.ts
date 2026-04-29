@@ -13,9 +13,9 @@ const JIN_YU: Readonly<Record<Gan, Zhi>> = {
   壬:"丑", 癸:"寅",
 };
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
-  return z === JIN_YU[b.day.gan] || z === JIN_YU[b.year.gan];
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
+  return z === JIN_YU[pillars[2].gan] || z === JIN_YU[pillars[0].gan];
 };
 
 export const 金舆 = { name: "金舆", check } as const;

@@ -14,6 +14,6 @@ const LIU_XIA: Readonly<Record<Gan, Zhi>> = {
   壬:"亥", 癸:"寅",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === LIU_XIA[b.day.gan];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === LIU_XIA[pillars[2].gan];
 
 export const 流霞 = { name: "流霞", check } as const;

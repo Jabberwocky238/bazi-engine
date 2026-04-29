@@ -11,6 +11,6 @@ const XUE_REN: Readonly<Record<Zhi, Zhi>> = {
   申:"辰", 酉:"戌", 戌:"巳", 亥:"亥",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === XUE_REN[b.month.zhi];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === XUE_REN[pillars[1].zhi];
 
 export const 血刃 = { name: "血刃", check } as const;

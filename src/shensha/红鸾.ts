@@ -7,6 +7,6 @@ const HONG_LUAN: Readonly<Record<Zhi, Zhi>> = {
   午:"酉", 未:"申", 申:"未", 酉:"午", 戌:"巳", 亥:"辰",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === HONG_LUAN[b.year.zhi];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === HONG_LUAN[pillars[0].zhi];
 
 export const 红鸾 = { name: "红鸾", check } as const;

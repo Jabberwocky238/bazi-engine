@@ -10,7 +10,7 @@ const DE_XIU: Readonly<Record<TriadKey, readonly Gan[]>> = {
   "巳酉丑": ["乙","庚","辛"],
 };
 
-const check: ShenshaCheck = (b, i) =>
-  DE_XIU[triadOf(b.month.zhi)].includes(pillarAt(b, i).gan);
+const check: ShenshaCheck = (pillars, i) =>
+  DE_XIU[triadOf(pillars[1].zhi)].includes(pillarAt(pillars, i).gan);
 
 export const 德秀贵人 = { name: "德秀贵人", check } as const;

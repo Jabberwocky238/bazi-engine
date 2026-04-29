@@ -8,6 +8,6 @@ const TIAN_YI_XING: Readonly<Record<Zhi, Zhi>> = {
   申:"未", 酉:"申", 戌:"酉", 亥:"戌",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === TIAN_YI_XING[b.month.zhi];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === TIAN_YI_XING[pillars[1].zhi];
 
 export const 天医 = { name: "天医", check } as const;

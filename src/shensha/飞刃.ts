@@ -10,6 +10,6 @@ const FEI_REN: Readonly<Record<Gan, Zhi>> = {
   壬:"午", 癸:"巳",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === FEI_REN[b.day.gan];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === FEI_REN[pillars[2].gan];
 
 export const 飞刃 = { name: "飞刃", check } as const;

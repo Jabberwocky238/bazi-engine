@@ -2,9 +2,9 @@
  * 十神计算入口. 十神本身的定义按名字拆在同目录的 10 个文件里; 本文件只做
  * (a) 汇总注册表  (b) 派发函数 shishenOf  (c) 批量计算 computeShishen.
  */
-import type { Gan, Pillar, BaziInput, Relation } from "../types.ts";
+import type { Gan, Pillar, Relation } from "../types.ts";
 import { CANG_GAN } from "../ganzhi/common.ts";
-import { relationOf, wuxingRelations, type WuXingRelations } from "../wuxing.ts";
+import { relationOf } from "../wuxing.ts";
 
 import { 比肩 } from "./比肩.ts";
 import { 劫财 } from "./劫财.ts";
@@ -56,31 +56,38 @@ export function shishenOf(day: Gan, other: Gan): Shishen {
   throw new Error(`unreachable: no shishen match for day=${day} other=${other}`);
 }
 
+/**
+ * 单柱十神结果. 适用于年/月/时主柱, 也适用于大运/流年/流月/流日/流时 等任意目标柱.
+ * 当 target 与 day 是同一柱时, 天干十神为 "日主" (与日主自身的关系不入十神体系).
+ */
 export type ShishenResult = {
-  /** 每柱天干十神 (日柱为 "日主") */
-  十神: (Shishen | "日主")[];
-  /** 每柱地支藏干 */
-  藏干: Gan[][];
-  /** 每柱藏干对应十神 */
-  藏干十神: Shishen[][];
-  /** 每柱天干与日主的五行关系 (日柱为 "同类") */
-  生克: Relation[];
-  /** 每柱藏干与日主的五行关系 */
-  藏干生克: Relation[][];
-  /** 日主的五行生克体系 */
-  五行: WuXingRelations;
+  /** target 天干对日主的十神 (target 即日主时为 "日主"). */
+  十神: Shishen | "日主";
+  /** target 地支藏干. */
+  藏干: Gan[];
+  /** target 藏干对日主的十神. */
+  藏干十神: Shishen[];
+  /** target 天干对日主的五行关系 (target 即日主时为 "同类"). */
+  生克: Relation;
+  /** target 藏干对日主的五行关系. */
+  藏干生克: Relation[];
 };
 
-export function computeShishen(input: BaziInput): ShishenResult {
-  const day = input.day.gan;
-  const pillars: Pillar[] = [input.year, input.month, input.day, input.hour];
+/**
+ * 计算 target 柱对 day 柱 (日主) 的十神视图.
+ *   - day:    日主柱 (取其天干为参考, 地支不参与).
+ *   - target: 任意目标柱 — 主柱 (年/月/时) 或 大运/流年/流月/流日/流时.
+ */
+export function computeShishen(day: Pillar, target: Pillar): ShishenResult {
+  const dayGan = day.gan;
+  const isSelf = target === day || (target.gan === day.gan && target.zhi === day.zhi);
 
-  const 十神 = pillars.map((p, i) => (i === 2 ? "日主" : shishenOf(day, p.gan)));
-  const 藏干 = pillars.map(p => [...CANG_GAN[p.zhi]]);
-  const 藏干十神 = 藏干.map(gans => gans.map(g => shishenOf(day, g)));
-  const 生克 = pillars.map(p => relationOf(day, p.gan));
-  const 藏干生克 = pillars.map(p => CANG_GAN[p.zhi].map(g => relationOf(day, g)));
-  const 五行 = wuxingRelations(day);
-
-  return { 十神, 藏干, 藏干十神, 生克, 藏干生克, 五行 };
+  const 藏干: Gan[] = [...CANG_GAN[target.zhi]];
+  return {
+    十神: isSelf ? "日主" : shishenOf(dayGan, target.gan),
+    藏干,
+    藏干十神: 藏干.map(g => shishenOf(dayGan, g)),
+    生克: relationOf(dayGan, target.gan),
+    藏干生克: 藏干.map(g => relationOf(dayGan, g)),
+  };
 }

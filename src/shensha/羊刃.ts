@@ -10,6 +10,6 @@ const YANG_REN: Readonly<Record<Gan, Zhi>> = {
   壬:"子", 癸:"亥",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === YANG_REN[b.day.gan];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === YANG_REN[pillars[2].gan];
 
 export const 羊刃 = { name: "羊刃", check } as const;

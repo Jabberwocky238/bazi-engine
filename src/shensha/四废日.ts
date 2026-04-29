@@ -10,9 +10,9 @@ const DAYS: Readonly<Record<Season, readonly GanZhi[]>> = {
   冬: ["丙午","丁巳"],
 };
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;
-  return DAYS[seasonOf(b.month.zhi)].includes(gzOf(b.day));
+  return DAYS[seasonOf(pillars[1].zhi)].includes(gzOf(pillars[2]));
 };
 
 export const 四废日 = { name: "四废日", check } as const;

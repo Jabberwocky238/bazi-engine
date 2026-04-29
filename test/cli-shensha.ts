@@ -10,12 +10,17 @@
  */
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
-import { computeShensha, type BaziInput, type Gan, type Zhi, ALL_SHENSHA, type Sex } from "../src/index.ts";
+import { computeShensha, type Gan, type Pillar, type Zhi, ALL_SHENSHA, type Sex } from "../src/index.ts";
 
-const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname.replace(/^\//, "");
+const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname;
 const PILLAR_KEYS = ["year", "month", "day", "hour"] as const;
 
-type Sample = { path: string; input: BaziInput; truth: string[][] };
+type Sample = {
+  path: string;
+  pillars: [Pillar, Pillar, Pillar, Pillar];
+  sex: Sex;
+  truth: string[][];
+};
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -47,13 +52,13 @@ function* iterSamples(): Generator<Sample> {
     const sex = sexRaw as Sex;
     yield {
       path: rel,
-      input: {
-        year:  { gan: yg as Gan, zhi: yz as Zhi },
-        month: { gan: mg as Gan, zhi: mz as Zhi },
-        day:   { gan: dg as Gan, zhi: dz as Zhi },
-        hour:  { gan: hg as Gan, zhi: hz as Zhi },
-        sex,
-      },
+      pillars: [
+        { gan: yg as Gan, zhi: yz as Zhi },
+        { gan: mg as Gan, zhi: mz as Zhi },
+        { gan: dg as Gan, zhi: dz as Zhi },
+        { gan: hg as Gan, zhi: hz as Zhi },
+      ],
+      sex,
       truth: (truth as unknown[]).slice(0, 4).map(v => Array.isArray(v) ? (v as string[]) : []),
     };
   }
@@ -73,7 +78,7 @@ function main(): number {
     total++;
 
     let got: ReturnType<typeof computeShensha>;
-    try { got = computeShensha(sample.input); }
+    try { got = computeShensha(sample.pillars, sample.sex); }
     catch (e) {
       bad++;
       const msg = e instanceof Error ? e.message : String(e);

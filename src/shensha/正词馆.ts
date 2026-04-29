@@ -11,9 +11,9 @@ export const ZHENG_CI_GUAN_GZ: Readonly<Record<NayinWuxing, GanZhi>> = {
   金:"壬申", 木:"庚寅", 水:"癸亥", 土:"丁亥", 火:"乙巳",
 };
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i === 0) return false;
-  return gzOf(pillarAt(b, i)) === ZHENG_CI_GUAN_GZ[nayinOf(b.year.gan, b.year.zhi)];
+  return gzOf(pillarAt(pillars, i)) === ZHENG_CI_GUAN_GZ[nayinOf(pillars[0].gan, pillars[0].zhi)];
 };
 
 export const 正词馆 = { name: "正词馆", check } as const;

@@ -12,13 +12,14 @@ const SAN_QI_TRIPLES: readonly (readonly [Gan, Gan, Gan])[] = [
   ["壬","癸","辛"],
 ] as const;
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;
-  const gans: [Gan, Gan, Gan, Gan] = [b.year.gan, b.month.gan, b.day.gan, b.hour.gan];
-  const windows: readonly [Gan, Gan, Gan][] = [
-    [gans[0], gans[1], gans[2]], // 年-月-日
-    [gans[1], gans[2], gans[3]], // 月-日-时
+  const windows: (readonly [Gan, Gan, Gan])[] = [
+    [pillars[0].gan, pillars[1].gan, pillars[2].gan], // 年-月-日
   ];
+  if (pillars[3]) {
+    windows.push([pillars[1].gan, pillars[2].gan, pillars[3].gan]); // 月-日-时
+  }
   return SAN_QI_TRIPLES.some(t =>
     windows.some(w => w[0] === t[0] && w[1] === t[1] && w[2] === t[2]));
 };

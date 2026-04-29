@@ -8,10 +8,12 @@ const GONG_LU_DAY_HOUR: readonly (readonly [GanZhi, GanZhi])[] = [
   ["戊辰","戊午"],                            // 拱巳
 ] as const;
 
-const check: ShenshaCheck = (b, i) => {
+const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;
-  const dayGz = gzOf(b.day);
-  const hourGz = gzOf(b.hour);
+  const hour = pillars[3];
+  if (!hour) return false;
+  const dayGz = gzOf(pillars[2]);
+  const hourGz = gzOf(hour);
   return GONG_LU_DAY_HOUR.some(([d, h]) => d === dayGz && h === hourGz);
 };
 

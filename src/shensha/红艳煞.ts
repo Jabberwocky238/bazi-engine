@@ -14,6 +14,6 @@ const HONG_YAN: Readonly<Record<Gan, Zhi>> = {
   壬:"子", 癸:"申",
 };
 
-const check: ShenshaCheck = (b, i) => pillarAt(b, i).zhi === HONG_YAN[b.day.gan];
+const check: ShenshaCheck = (pillars, i) => pillarAt(pillars, i).zhi === HONG_YAN[pillars[2].gan];
 
 export const 红艳煞 = { name: "红艳煞", check } as const;

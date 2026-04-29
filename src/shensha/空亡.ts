@@ -2,10 +2,10 @@
 import { kongwangFor } from "../kongwang.ts";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
-const check: ShenshaCheck = (b, i) => {
-  const z = pillarAt(b, i).zhi;
-  const yKw = kongwangFor(b.year.gan, b.year.zhi);
-  const dKw = kongwangFor(b.day.gan, b.day.zhi);
+const check: ShenshaCheck = (pillars, i) => {
+  const z = pillarAt(pillars, i).zhi;
+  const yKw = kongwangFor(pillars[0].gan, pillars[0].zhi);
+  const dKw = kongwangFor(pillars[2].gan, pillars[2].zhi);
   return yKw.includes(z) || dKw.includes(z);
 };
 

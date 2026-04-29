@@ -2,9 +2,11 @@
  * 神煞计算入口. 每个神煞的数据 + 判定封装在同目录下同名文件里;
  * 本文件只负责 (a) 注册表 (b) 批量计算 computeShensha (c) 导出 API.
  */
-import type { BaziInput, Gan, Zhi } from "../types.ts";
+import type { Gan, Pillar, Sex, Zhi } from "../types.ts";
 import { GAN, ZHI } from "../types.ts";
-import { PILLAR_KEYS, type ShenshaCheck } from "./common.ts";
+import {
+  type PillarIndex, type ShenshaCheck, type ShenshaPillars,
+} from "./common.ts";
 
 export type { PillarIndex, ShenshaCheck, ShenshaDef } from "./common.ts";
 
@@ -110,20 +112,32 @@ export type ShenshaResult = { year: Shensha[]; month: Shensha[]; day: Shensha[];
 const isGan = (x: string): x is Gan => (GAN as readonly string[]).includes(x);
 const isZhi = (x: string): x is Zhi => (ZHI as readonly string[]).includes(x);
 
-function validate(b: BaziInput): void {
-  for (const key of PILLAR_KEYS) {
-    const p = b[key];
-    if (!isGan(p.gan)) throw new Error(`${key}.gan invalid: ${p.gan}`);
-    if (!isZhi(p.zhi)) throw new Error(`${key}.zhi invalid: ${p.zhi}`);
+const PILLAR_LABELS = ["year", "month", "day", "hour"] as const;
+
+function validate(pillars: ShenshaPillars): void {
+  for (let i = 0; i < 4; i++) {
+    const p = pillars[i];
+    if (!p) continue;
+    if (!isGan(p.gan)) throw new Error(`${PILLAR_LABELS[i]}.gan invalid: ${p.gan}`);
+    if (!isZhi(p.zhi)) throw new Error(`${PILLAR_LABELS[i]}.zhi invalid: ${p.zhi}`);
   }
 }
 
-export function computeShensha(input: BaziInput): ShenshaResult {
-  validate(input);
+/**
+ * 输入: 四主柱 tuple (年/月/日/时, 时柱可为 undefined) + 性别.
+ *   - sex 仅用于 元辰 (阳男阴女 / 阴男阳女 偏移不同).
+ *   - 时柱 undefined 时, 时柱神煞返回空数组; 其他柱 detector 若读到时柱也自行回退.
+ */
+export function computeShensha(
+  pillars: readonly [Pillar, Pillar, Pillar, Pillar | undefined],
+  sex: Sex,
+): ShenshaResult {
+  validate(pillars);
   const out: Shensha[][] = [[], [], [], []];
+  const indices: PillarIndex[] = pillars[3] ? [0, 1, 2, 3] : [0, 1, 2];
   for (const def of SHENSHA_DEFS) {
-    for (const i of [0, 1, 2, 3] as const) {
-      if (def.check(input, i)) out[i]!.push(def.name);
+    for (const i of indices) {
+      if (def.check(pillars, i, sex)) out[i]!.push(def.name);
     }
   }
   return { year: out[0]!, month: out[1]!, day: out[2]!, hour: out[3]! };
