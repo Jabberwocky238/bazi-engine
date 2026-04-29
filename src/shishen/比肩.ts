@@ -1,6 +1,6 @@
 /** 比肩 = 同类 + 同阴阳. */
 import type { Gan } from "../types.ts";
-import { isYangGan } from "../ganzhi.ts";
+import { isYangGan } from "../ganzhi/common.ts";
 import { relationOf } from "../wuxing.ts";
 import type { ShishenDef } from "./index.ts";
 

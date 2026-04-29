@@ -1,6 +1,9 @@
 /**
- * 合冲刑害共享类型与小工具. 不放具体类别的查表 const —
- * 每个类别的对照表放在各自文件内.
+ * 干支基础 + 合冲刑害共享类型与小工具.
+ *
+ * 第一段: 天干 / 地支 五行属性, 地支藏干, 阴阳判断.
+ * 第二段: 合冲刑害 detect 共用的类型 / 工具, 不放具体类别的查表 const ——
+ *        每个类别的对照表放在各自文件内.
  *
  * 类别编目 (API 权威清单, 共 9 个):
  *   天干: 天干五合 / 天干相克
@@ -11,8 +14,57 @@
  * 墓库 为工具附加, 不在 API 清单内.
  * 争合 / 妒合 为 天干五合 的子态, 单独成条便于展示.
  */
-import type { Pillar, WuXing } from "../types.ts";
-import { ganWuxing } from "../ganzhi.ts";
+import type { Gan, Pillar, WuXing, Zhi } from "../types.ts";
+import { GAN } from "../types.ts";
+
+// ———————————————————————————————————————————————
+// 干支五行 / 藏干 / 阴阳
+// ———————————————————————————————————————————————
+
+export const GAN_WUXING: Record<Gan, WuXing> = {
+  甲:"木", 乙:"木",
+  丙:"火", 丁:"火",
+  戊:"土", 己:"土",
+  庚:"金", 辛:"金",
+  壬:"水", 癸:"水",
+};
+
+export const ZHI_WUXING: Record<Zhi, WuXing> = {
+  子:"水", 亥:"水",
+  寅:"木", 卯:"木",
+  巳:"火", 午:"火",
+  申:"金", 酉:"金",
+  辰:"土", 戌:"土",
+  丑:"土", 未:"土",
+};
+
+/** 地支藏干 (dataset convention). */
+export const CANG_GAN: Readonly<Record<Zhi, readonly Gan[]>> = {
+  子:["癸"],
+  丑:["己","癸","辛"],
+  寅:["甲","丙","戊"],
+  卯:["乙"],
+  辰:["戊","乙","癸"],
+  巳:["丙","庚","戊"],
+  午:["丁","己"],
+  未:["己","丁","乙"],
+  申:["庚","壬","戊"],
+  酉:["辛"],
+  戌:["戊","辛","丁"],
+  亥:["壬","甲"],
+};
+
+/** 阳干: 甲丙戊庚壬 (GAN 索引偶数). */
+export function isYangGan(g: Gan): boolean {
+  return GAN.indexOf(g) % 2 === 0;
+}
+
+export function ganWuxing(g: Gan): WuXing { return GAN_WUXING[g]; }
+export function zhiWuxing(z: Zhi): WuXing { return ZHI_WUXING[z]; }
+
+// ———————————————————————————————————————————————
+// 合冲刑害 共享类型
+// ———————————————————————————————————————————————
 
 export type Pos = "年" | "月" | "日" | "时";
 export const POS_NAMES: readonly Pos[] = ["年", "月", "日", "时"];
@@ -55,6 +107,58 @@ export interface Finding {
   note: string;
   mdKey?: string;
   quality: FindingQuality;
+  /**
+   * extras 引化 (合解). 当 finding 为 冲/克/刑/害/破 且 extras 与某参与方
+   * 形成 六合 / 半三合 / 天干五合 时填入. 无则字段缺省.
+   */
+  dissolved?: FindingMod[];
+  /**
+   * extras 冲克 (合解). 当 finding 为 合 (天干五合 / 地支六合 / 三合 / 三会)
+   * 且 extras 与某参与方形成 六冲 / 天干相克 时填入. 无则字段缺省.
+   */
+  impacted?: FindingMod[];
+  /** 墓库专用: extras 地支与本柱地支相冲 → 冲开. 无则字段缺省. */
+  opened?: FindingMod[];
+}
+
+// ———————————————————————————————————————————————
+// extras (大运/流年/流月) 输入 + 关系
+// ———————————————————————————————————————————————
+
+/** 岁运柱 — 大运 / 流年 / 流月 等任意标签的单柱输入. */
+export interface ExtraPillar {
+  /** 任意标签, 通常为 "大运" / "流年" / "流月". */
+  label: string;
+  gan: Gan;
+  zhi: Zhi;
+  /** 干支字符串, 形如 "甲子". */
+  gz: string;
+}
+
+/** Finding 上 dissolved / impacted / opened 的来源标记. */
+export interface FindingMod {
+  by: { label: string; gz: string };
+  /** pairwise note, 形如 "申子半三合水" / "甲己合化土" / "辰戌相冲". */
+  via: string;
+}
+
+/** extras × 主柱 两两关系的可能种类. */
+export type ExtraInteractionKind =
+  | "六合" | "半三合" | "半三会"
+  | "六冲" | "六害" | "六破"
+  | "相刑" | "自刑"
+  | "天干五合" | "天干相克";
+
+/** extras × 主柱 引入的一条新两两关系. */
+export interface ExtraInteraction {
+  kind: ExtraInteractionKind;
+  source: { label: string; gz: string };
+  /** 关联的主柱位. */
+  target: Pos;
+  targetGz: string;
+  /** 化气五行 (合/会才有). */
+  huaWx?: WuXing;
+  note: string;
 }
 
 export interface GanSlot { pos: number; gan: Pillar["gan"] }

@@ -1,5 +1,4 @@
 export * from "./types.ts";
-export * from "./ganzhi.ts";
 export * from "./wuxing.ts";
 export * from "./triad.ts";
 export * from "./nayin.ts";

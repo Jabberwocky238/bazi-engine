@@ -9,7 +9,7 @@
  * 通过 state 区分. 一柱内紧贴作用 —— close 恒为 true.
  */
 import type { Pillar, WuXing } from "../../types.ts";
-import { ganWuxing, zhiWuxing } from "../../ganzhi.ts";
+import { ganWuxing, zhiWuxing } from "../common.ts";
 import { GENERATES } from "../../wuxing.ts";
 import { POS_NAMES, type Finding } from "../common.ts";
 

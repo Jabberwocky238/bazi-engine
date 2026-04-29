@@ -9,7 +9,8 @@
       "WebFetch(domain:www.shenjige.cn)",
       "WebFetch(domain:www.sf280.com)",
       "WebFetch(domain:www.sohu.com)",
-      "Bash(python)"
+      "Bash(python)",
+      "Bash(git -C /Users/jw238/coding/bazi-engine/bazi log --oneline -10)"
     ]
   }
 }

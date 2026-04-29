@@ -1,6 +1,6 @@
 /** 五行生克体系 + 日主相对关系. */
 import type { Gan, WuXing, Relation } from "./types.ts";
-import { GAN_WUXING } from "./ganzhi.ts";
+import { GAN_WUXING } from "./ganzhi/common.ts";
 
 /** 五行相生: key 生 value */
 export const GENERATES: Readonly<Record<WuXing, WuXing>> = {

@@ -13,7 +13,7 @@
  * 即便触发 争合 / 妒合, API 仍单独输出 基础合化 条目, 此处与之对齐.
  */
 import type { Pillar, WuXing } from "../../types.ts";
-import { zhiWuxing } from "../../ganzhi.ts";
+import { zhiWuxing } from "../common.ts";
 import { GENERATES } from "../../wuxing.ts";
 import {
   adjacent, collectGans, posRange, POS_NAMES,

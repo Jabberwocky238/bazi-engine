@@ -10,7 +10,7 @@
  * 一柱内紧贴作用 —— close 恒为 true.
  */
 import type { Pillar } from "../../types.ts";
-import { ganWuxing, zhiWuxing } from "../../ganzhi.ts";
+import { ganWuxing, zhiWuxing } from "../common.ts";
 import { CONTROLS } from "../../wuxing.ts";
 import { POS_NAMES, type Finding } from "../common.ts";
 

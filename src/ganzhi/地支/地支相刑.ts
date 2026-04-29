@@ -14,7 +14,7 @@
  *   "酉酉相刑" / "辰辰相刑" ...                     state "自刑"
  */
 import type { Pillar, Zhi } from "../../types.ts";
-import { zhiWuxing } from "../../ganzhi.ts";
+import { zhiWuxing } from "../common.ts";
 import {
   adjacent, isGanTou, posRange,
   type Finding,
