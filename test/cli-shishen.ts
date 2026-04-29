@@ -82,8 +82,10 @@ function main(): number {
     if (total >= limit) break;
     total++;
 
-    let got: ReturnType<typeof computeShishen>;
-    try { got = computeShishen(sample.input); }
+    const day = sample.input.day;
+    const targets = [sample.input.year, sample.input.month, sample.input.day, sample.input.hour];
+    let perPillar: ReturnType<typeof computeShishen>[];
+    try { perPillar = targets.map(t => computeShishen(day, t)); }
     catch (e) {
       bad++;
       const msg = e instanceof Error ? e.message : String(e);
@@ -91,16 +93,24 @@ function main(): number {
       continue;
     }
 
+    const gotAgg = {
+      ss:   perPillar.map(r => r.十神),
+      cg:   perPillar.map(r => r.藏干),
+      cgss: perPillar.map(r => r.藏干十神),
+    };
+
     const pairs = [
       ["十神",   "ss"],
       ["藏干",   "cg"],
       ["藏干十神", "cgss"],
     ] as const;
+    const fieldMap = { "十神": "ss", "藏干": "cg", "藏干十神": "cgss" } as const;
     const diffs: { field: string; want: unknown; got: unknown }[] = [];
     for (const [resKey, truthKey] of pairs) {
-      if (!eq(got[resKey], sample.truth[truthKey])) {
+      const gotVal = gotAgg[fieldMap[resKey]];
+      if (!eq(gotVal, sample.truth[truthKey])) {
         perField[truthKey]++;
-        diffs.push({ field: resKey, want: sample.truth[truthKey], got: got[resKey] });
+        diffs.push({ field: resKey, want: sample.truth[truthKey], got: gotVal });
       }
     }
 

@@ -102,7 +102,7 @@ function main(): number {
     if (diffs.length) {
       bad++;
       if (shown < show) {
-        console.log(`\n[diff] ${sample.path}  pillars=${JSON.stringify(sample.input)}`);
+        console.log(`\n[diff] ${sample.path}  pillars=${JSON.stringify(sample.pillars)}`);
         for (const d of diffs) console.log(`    ${d.pillar.padEnd(5)}  missing=${JSON.stringify(d.missing)}  extra=${JSON.stringify(d.extra)}`);
         shown++;
       }
