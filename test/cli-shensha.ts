@@ -9,10 +9,10 @@
  * rules outside that list are out of scope.
  */
 import { readFileSync } from "node:fs";
-import { relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { computeShensha, type Gan, type Pillar, type Zhi, ALL_SHENSHA, type Sex } from "../src/index.ts";
 
-const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../bazi_data/", import.meta.url));
 const PILLAR_KEYS = ["year", "month", "day", "hour"] as const;
 
 type Sample = {

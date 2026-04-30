@@ -13,12 +13,13 @@
  * 墓库 / 绝 are ours-only, excluded from extra counting.
  */
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   analyzeGanZhi, type Finding,
   GAN, ZHI, type Gan, type Zhi, type Pillar,
 } from "../src/index.ts";
 
-const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname;
+const DATA_DIR = fileURLToPath(new URL("../bazi_data/", import.meta.url));
 const GAN_SET: ReadonlySet<string> = new Set(GAN);
 const ZHI_SET: ReadonlySet<string> = new Set(ZHI);
 

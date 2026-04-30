@@ -80,7 +80,7 @@ export type ShishenResult = {
  */
 export function computeShishen(day: Pillar, target: Pillar): ShishenResult {
   const dayGan = day.gan;
-  const isSelf = target === day || (target.gan === day.gan && target.zhi === day.zhi);
+  const isSelf = target === day;
 
   const 藏干: Gan[] = [...CANG_GAN[target.zhi]];
   return {

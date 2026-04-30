@@ -8,9 +8,10 @@
  * Compares `ss` / `cg` / `cgss` exactly.
  */
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { computeShishen, type BaziInput, type Gan, type Zhi, type Sex } from "../src/index.ts";
 
-const DATA_DIR = new URL("../bazi_data/", import.meta.url).pathname.replace(/^\//, "");
+const DATA_DIR = fileURLToPath(new URL("../bazi_data/", import.meta.url));
 
 type Sample = {
   path: string;
