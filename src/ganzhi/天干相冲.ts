@@ -5,11 +5,11 @@
  * 注: API 将天干冲归入 "相克" 而不用 "相冲" 短标, 故与 `天干相克` 在 pair-category
  * 层可能重叠. 本文件保留原始分类定义供展示 / md 对照.
  */
-import type { Gan, Pillar } from "../../types.ts";
+import type { Gan, Pillar } from "../types.ts";
 import {
   adjacent, collectGans, posRange, dissolversByGan,
   type ConflictFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 const GAN_CHONG: Array<[string, string]> = [
   ["甲", "庚"], ["乙", "辛"], ["丙", "壬"], ["丁", "癸"],

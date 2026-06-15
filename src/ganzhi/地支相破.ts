@@ -6,11 +6,11 @@
  *
  * API 全名 "辰丑相破", state "相破". 力量较弱.
  */
-import type { Pillar, Zhi } from "../../types.ts";
+import type { Pillar, Zhi } from "../types.ts";
 import {
   adjacent, collectZhis, posRange, dissolversByZhi,
   type ConflictFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 const LIUPO: Array<[string, string, string]> = [
   ["子", "酉", "四帝旺之破"],

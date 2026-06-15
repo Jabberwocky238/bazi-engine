@@ -9,11 +9,11 @@
  *
  * API 全名 "寅巳相害", state "相害".
  */
-import type { Pillar, Zhi } from "../../types.ts";
+import type { Pillar, Zhi } from "../types.ts";
 import {
   adjacent, collectZhis, posRange, dissolversByZhi,
   type ConflictFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 const LIUHAI: Array<[string, string, string]> = [
   ["子", "未", "世家之害"],

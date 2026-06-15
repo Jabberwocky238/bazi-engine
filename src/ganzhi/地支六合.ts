@@ -10,11 +10,11 @@
  * API 表述: 全名 "子丑合化土", state 形如 "合化土" (六合皆按合化描述).
  * 化气硬条件 (紧贴 + 天干透化气) 由 Finding.transformed 反映.
  */
-import type { Pillar, WuXing, Zhi } from "../../types.ts";
+import type { Pillar, WuXing, Zhi } from "../types.ts";
 import {
   adjacent, collectZhis, isGanTou, posRange, impactorsByZhi,
   type HeFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 const LIUHE: Array<[string, string, string, string]> = [
   ["子", "丑", "土",   "泥合"],

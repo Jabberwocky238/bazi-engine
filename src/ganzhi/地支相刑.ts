@@ -13,11 +13,11 @@
  *   "子卯相刑"                                     state "相刑"
  *   "酉酉相刑" / "辰辰相刑" ...                     state "自刑"
  */
-import type { Pillar, Zhi } from "../../types.ts";
+import type { Pillar, Zhi } from "../types.ts";
 import {
   adjacent, isGanTou, posRange, zhiWuxing, dissolversByZhi,
   type ConflictFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 function withDissolved(f: ConflictFinding, zhis: Zhi[], extras: ExtraPillar[]): ConflictFinding {
   const dis = dissolversByZhi(zhis, extras);

@@ -12,11 +12,11 @@
  *
  * API 全名 "巳酉暗合", state "暗合".
  */
-import type { Pillar, Zhi } from "../../types.ts";
+import type { Pillar, Zhi } from "../types.ts";
 import {
   adjacent, collectZhis, posRange, impactorsByZhi,
   type HeFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 /** [a, b, 藏干合对]. */
 const AN_HE: Array<[Zhi, Zhi, string]> = [

@@ -4,11 +4,11 @@
  *
  * API 全名 "子午相冲", state "相冲".
  */
-import type { Pillar, Zhi } from "../../types.ts";
+import type { Pillar, Zhi } from "../types.ts";
 import {
   adjacent, collectZhis, posRange, dissolversByZhi,
   type ConflictFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 const ZHI_CHONG: Array<[string, string]> = [
   ["子", "午"], ["卯", "酉"], ["寅", "申"], ["巳", "亥"], ["辰", "戌"], ["丑", "未"],

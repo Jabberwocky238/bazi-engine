@@ -148,11 +148,12 @@ export interface MuKuFinding extends BaseFinding {
   opened?: FindingMod[];
 }
 
-/** 整柱 (盖头 / 截脚 / 覆载) — 单柱内天干地支作用, 与 extras 无关. */
-export interface WholePillarFinding extends BaseFinding {
+/** 整柱 (盖头 / 截脚 / 覆载) */
+export interface WholePillarFinding {
   kind: "盖头" | "截脚" | "覆载";
-  /** 单柱内永远紧贴. */
-  close: true;
+  subfuzai?: "同气" | "得覆" | "得载";
+  name: string;
+  note: string;
 }
 
 /** 争合 / 妒合 — 天干五合 子态, 单独成条便于展示. */

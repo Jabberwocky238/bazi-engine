@@ -5,11 +5,11 @@
  *
  * 不要求紧贴 —— 隔位也论相克. 紧贴与否由 Finding.close 反映.
  */
-import type { Gan, Pillar } from "../../types.ts";
+import type { Gan, Pillar } from "../types.ts";
 import {
   adjacent, collectGans, posRange, dissolversByGan,
   type ConflictFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 /** 同性相克 10 对 (已涵盖 4 组冲). */
 const KE_PAIRS: Array<[string, string]> = [

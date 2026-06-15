@@ -11,11 +11,11 @@
  *   长生+墓                → "XY拱合Z"   (透中神阴干者称 "拱出")
  * 一个 三支齐全 的局, 会同时输出 三合 + 2×半合 + 1×拱合 共 4 条.
  */
-import type { Pillar, WuXing, Zhi } from "../../types.ts";
+import type { Pillar, WuXing, Zhi } from "../types.ts";
 import {
   adjacent, hasGan, isGanTou, posRange, impactorsByZhi,
   type HeFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 /** [长生, 帝旺, 墓库, 化气]. */
 const SANHE: Array<[Zhi, Zhi, Zhi, WuXing]> = [

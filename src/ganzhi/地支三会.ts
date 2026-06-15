@@ -7,11 +7,11 @@
  *   首+末 (缺中神) → "寅辰拱会", state "拱会木局"
  * 一个 三支齐全 的会, 同时输出 三会 + 拱会 两条.
  */
-import type { Pillar, WuXing, Zhi } from "../../types.ts";
+import type { Pillar, WuXing, Zhi } from "../types.ts";
 import {
   hasGan, isGanTou, posRange, impactorsByZhi,
   type HeFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 /** [首, 中, 末, 化气, 方位]. */
 const SANHUI: Array<[Zhi, Zhi, Zhi, WuXing, string]> = [

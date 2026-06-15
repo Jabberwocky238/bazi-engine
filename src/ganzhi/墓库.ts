@@ -13,11 +13,11 @@
  *   默认:
  *     - 墓气未透 → 闭库
  */
-import type { Pillar, Zhi } from "../../types.ts";
+import type { Pillar, Zhi } from "../types.ts";
 import {
   POS_NAMES, hasGan, openersByZhi,
   type MuKuFinding, type ExtraPillar,
-} from "../common.ts";
+} from "./common.ts";
 
 interface KuInfo {
   readonly benqi: string;

@@ -150,7 +150,7 @@ function ourKeys(pillars: Pillar[]): Set<string> {
     ...a.地支六合, ...a.地支三合, ...a.地支三会, ...a.地支暗合,
     ...a.地支相刑, ...a.地支相冲, ...a.地支相破, ...a.地支相害,
     ...a.墓库,
-    ...a.盖头, ...a.截脚, ...a.覆载,
+    ...a.盖头截脚覆载,
   ];
   for (const f of all) {
     const cat = ourCat(f);
