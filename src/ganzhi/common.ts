@@ -22,36 +22,36 @@ import { GAN } from "../types.ts";
 // ———————————————————————————————————————————————
 
 export const GAN_WUXING: Record<Gan, WuXing> = {
-  甲:"木", 乙:"木",
-  丙:"火", 丁:"火",
-  戊:"土", 己:"土",
-  庚:"金", 辛:"金",
-  壬:"水", 癸:"水",
+  甲: "木", 乙: "木",
+  丙: "火", 丁: "火",
+  戊: "土", 己: "土",
+  庚: "金", 辛: "金",
+  壬: "水", 癸: "水",
 };
 
 export const ZHI_WUXING: Record<Zhi, WuXing> = {
-  子:"水", 亥:"水",
-  寅:"木", 卯:"木",
-  巳:"火", 午:"火",
-  申:"金", 酉:"金",
-  辰:"土", 戌:"土",
-  丑:"土", 未:"土",
+  子: "水", 亥: "水",
+  寅: "木", 卯: "木",
+  巳: "火", 午: "火",
+  申: "金", 酉: "金",
+  辰: "土", 戌: "土",
+  丑: "土", 未: "土",
 };
 
 /** 地支藏干 (dataset convention). */
 export const CANG_GAN: Readonly<Record<Zhi, readonly Gan[]>> = {
-  子:["癸"],
-  丑:["己","癸","辛"],
-  寅:["甲","丙","戊"],
-  卯:["乙"],
-  辰:["戊","乙","癸"],
-  巳:["丙","庚","戊"],
-  午:["丁","己"],
-  未:["己","丁","乙"],
-  申:["庚","壬","戊"],
-  酉:["辛"],
-  戌:["戊","辛","丁"],
-  亥:["壬","甲"],
+  子: ["癸"],
+  丑: ["己", "癸", "辛"],
+  寅: ["甲", "丙", "戊"],
+  卯: ["乙"],
+  辰: ["戊", "乙", "癸"],
+  巳: ["丙", "庚", "戊"],
+  午: ["丁", "己"],
+  未: ["己", "丁", "乙"],
+  申: ["庚", "壬", "戊"],
+  酉: ["辛"],
+  戌: ["戊", "辛", "丁"],
+  亥: ["壬", "甲"],
 };
 
 /** 阳干: 甲丙戊庚壬 (GAN 索引偶数). */
@@ -81,13 +81,11 @@ export interface ExtraPillar {
   label: string;
   gan: Gan;
   zhi: Zhi;
-  /** 干支字符串, 形如 "甲子". */
-  gz: string;
 }
 
 /** Finding 状态字段的来源标记 (dissolved / impacted / opened 各自 FindingMod[]). */
 export interface FindingMod {
-  by: { label: string; gz: string };
+  by: ExtraPillar;
   /** pairwise note, 形如 "申子半三合水" / "甲己合化土" / "辰戌相冲". */
   via: string;
 }
@@ -213,7 +211,7 @@ export function dissolversByZhi(zhis: Iterable<Zhi>, extras: ExtraPillar[]): Fin
     for (const z of zhis) {
       const r = pairwiseZhi(e.zhi, z);
       if (r && (r.kind === "六合" || r.kind === "半三合")) {
-        out.push({ by: { label: e.label, gz: e.gz }, via: r.note });
+        out.push({ by: e, via: r.note });
         break;
       }
     }
@@ -228,7 +226,7 @@ export function dissolversByGan(gans: Iterable<Gan>, extras: ExtraPillar[]): Fin
     for (const g of gans) {
       const r = pairwiseGan(e.gan, g);
       if (r && r.kind === "天干五合") {
-        out.push({ by: { label: e.label, gz: e.gz }, via: r.note });
+        out.push({ by: e, via: r.note });
         break;
       }
     }
@@ -243,7 +241,7 @@ export function impactorsByZhi(zhis: Iterable<Zhi>, extras: ExtraPillar[]): Find
     for (const z of zhis) {
       const r = pairwiseZhi(e.zhi, z);
       if (r && r.kind === "六冲") {
-        out.push({ by: { label: e.label, gz: e.gz }, via: r.note });
+        out.push({ by: e, via: r.note });
         break;
       }
     }
@@ -258,7 +256,7 @@ export function impactorsByGan(gans: Iterable<Gan>, extras: ExtraPillar[]): Find
     for (const g of gans) {
       const r = pairwiseGan(e.gan, g);
       if (r && r.kind === "天干相克") {
-        out.push({ by: { label: e.label, gz: e.gz }, via: r.note });
+        out.push({ by: e, via: r.note });
         break;
       }
     }
@@ -272,7 +270,7 @@ export function openersByZhi(muZhi: Zhi, extras: ExtraPillar[]): FindingMod[] {
   for (const e of extras) {
     const r = pairwiseZhi(e.zhi, muZhi);
     if (r && r.kind === "六冲") {
-      out.push({ by: { label: e.label, gz: e.gz }, via: r.note });
+      out.push({ by: e, via: r.note });
     }
   }
   return out;
