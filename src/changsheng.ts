@@ -24,7 +24,7 @@ const START: Record<Gan, { zhi: Zhi; forward: boolean }> = {
 /**
  * e.g. 甲 + 亥 => 长生; 壬 + 午 => 胎; 癸 + 未 => 墓.
  */
-export function zizuoState(gan: Gan, zhi: Zhi): ChangSheng {
+export function changshengState(gan: Gan, zhi: Zhi): ChangSheng {
   const info = START[gan]!;
   const startIdx = ZHI.indexOf(info.zhi);
   const zhiIdx = ZHI.indexOf(zhi);

@@ -7,5 +7,6 @@ export * from "./kongwang.ts";
 export * from "./shensha/index.ts";
 export * from "./shishen/index.ts";
 export * from "./ganzhi/index.ts";
-export * from "./zizuo.ts";
+export * from "./changsheng.ts";
 export * from "./dayun.ts";
+export * from "./yueling.ts";
