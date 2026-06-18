@@ -9,3 +9,4 @@ export * from "./shishen/index.ts";
 export * from "./ganzhi/index.ts";
 export * from "./changsheng.ts";
 export * from "./dayun.ts";
+export * from "./calculator.ts";
