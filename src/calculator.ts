@@ -26,7 +26,7 @@ export interface DetailedPillar {
     changsheng: ChangSheng
 }
 
-export default class Calculator {
+export class Calculator {
     private fourPillars: [Pillar, Pillar, Pillar, Pillar | undefined]
     private mustPillars: Pillar[]
 
