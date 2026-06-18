@@ -74,7 +74,7 @@ export type FindingQuality = "good" | "bad" | "neutral";
 // ———————————————————————————————————————————————
 // extras (大运/流年/流月) 输入 + 关系
 // ———————————————————————————————————————————————
-export const PILLAR_LABELS = ['年柱', '月柱', '日柱', '时柱', '大运', '流年', '流月', '流日', '流时']
+export const PILLAR_LABELS = ['年柱', '月柱', '日柱', '时柱', '大运', '流年', '流月', '流日', '流时'] as const
 export type PillarType = typeof PILLAR_LABELS[number]
 
 /** 岁运柱 — 大运 / 流年 / 流月 等任意标签的单柱输入. */
