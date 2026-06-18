@@ -20,7 +20,7 @@ export type Season = "春" | "夏" | "秋" | "冬";
 export type Pillar = { gan: Gan; zhi: Zhi };
 /** sex: 1 = 男, 0 = 女. 性别相关神煞 (如 元辰) 必填. */
 export type Sex = 0 | 1;
-export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour: Pillar; sex: Sex };
+export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour?: Pillar; sex: Sex };
 
 /** 日主与某天干的五行关系 (不分阴阳). */
 export type Relation = "同类" | "我生" | "我克" | "克我" | "生我";

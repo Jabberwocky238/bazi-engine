@@ -128,6 +128,7 @@ function validate(pillars: ShenshaPillars): void {
  *   - sex 仅用于 元辰 (阳男阴女 / 阴男阳女 偏移不同).
  *   - 时柱 undefined 时, 时柱神煞返回空数组; 其他柱 detector 若读到时柱也自行回退.
  */
+
 export function computeShensha(
   pillars: readonly [Pillar, Pillar, Pillar, Pillar | undefined],
   sex: Sex,

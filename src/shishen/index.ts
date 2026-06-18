@@ -2,9 +2,9 @@
  * 十神计算入口. 十神本身的定义按名字拆在同目录的 10 个文件里; 本文件只做
  * (a) 汇总注册表  (b) 派发函数 shishenOf  (c) 批量计算 computeShishen.
  */
-import type { Gan, Pillar, Relation } from "../types.ts";
+import type { Gan, Pillar, Relation, WuXing, Zhi } from "../types.ts";
 import { CANG_GAN } from "../ganzhi/common.ts";
-import { relationOf } from "../wuxing.ts";
+import { relationOf, wuxingRelations } from "../wuxing.ts";
 
 import { 比肩 } from "./比肩.ts";
 import { 劫财 } from "./劫财.ts";
@@ -40,6 +40,10 @@ export const SHISHEN_DEFS = [
 export const ShishenMap = Object.fromEntries(
   SHISHEN_DEFS.map(d => [d.name, d]),
 ) as Record<Shishen, ShishenDef>;
+
+export const SHI_SHEN_CAT: Record<Shishen, ShishenCat> = Object.fromEntries(
+  Object.entries(ShishenMap).map(([name, def]) => [name, def.category]),
+) as Record<Shishen, ShishenCat>
 
 /**
  * 日主 `day` 对另一天干 `other` 的十神称谓.
@@ -78,16 +82,18 @@ export type ShishenResult = {
  *   - day:    日主柱 (取其天干为参考, 地支不参与).
  *   - target: 任意目标柱 — 主柱 (年/月/时) 或 大运/流年/流月/流日/流时.
  */
-export function computeShishen(day: Pillar, target: Pillar): ShishenResult {
-  const dayGan = day.gan;
-  const isSelf = target === day;
 
-  const 藏干: Gan[] = [...CANG_GAN[target.zhi]];
-  return {
-    十神: isSelf ? "日主" : shishenOf(dayGan, target.gan),
-    藏干,
-    藏干十神: 藏干.map(g => shishenOf(dayGan, g)),
-    生克: relationOf(dayGan, target.gan),
-    藏干生克: 藏干.map(g => relationOf(dayGan, g)),
-  };
+export function computeShishenGan(dayGan: Gan, targetGan: Gan): Shishen | "日主" {
+  if (dayGan === targetGan) return "日主";
+  return shishenOf(dayGan, targetGan);
+}
+  
+export function computeShishenZhi(dayGan: Gan, targetZhi: Zhi): Shishen[] {
+  const cangGan = CANG_GAN[targetZhi];
+  return cangGan.map(g => shishenOf(dayGan, g));
+} 
+
+export function computeShishenWuxing(dayGan: Gan, targetShishen: Shishen): WuXing {
+  const def = ShishenMap[targetShishen];
+  return wuxingRelations(dayGan)[def.relation];
 }
