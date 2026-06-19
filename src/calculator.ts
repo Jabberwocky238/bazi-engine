@@ -1,6 +1,6 @@
 import { changshengState, type ChangSheng } from "./changsheng";
 import { CANG_GAN, ganWuxing, PILLAR_LABELS, zhiWuxing, type PillarType } from "./ganzhi";
-import { nayinOf } from "./nayin";
+import { nayinNameOf } from "./nayin";
 import { computeShensha, type Shensha } from "./shensha";
 import { computeShishenGan, computeShishenZhi, computeShishenWuxing, type Shishen, SHI_SHEN_CAT, type ShishenCat } from "./shishen";
 import type { BaziInput, Gan, Pillar, Sex, WuXing, Zhi } from "./types";
@@ -62,7 +62,7 @@ export class Calculator {
                         }
                     }),
                 },
-                nayin: nayinOf(p.gan, p.zhi),
+                nayin: nayinNameOf(p.gan, p.zhi),
                 shensha: realshensha[i] ? realshensha[i]! : [],
                 changsheng: changshengState(p.gan, p.zhi),
             }
