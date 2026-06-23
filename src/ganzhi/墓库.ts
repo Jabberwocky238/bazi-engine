@@ -13,26 +13,69 @@
  *   默认:
  *     - 墓气未透 → 闭库
  */
-import type { Pillar, Zhi } from "../types.ts";
+import type { Gan, Pillar, WuXing, Zhi } from "../types.ts";
 import {
   POS_NAMES, hasGan, openersByZhi,
-  type MuKuFinding, type ExtraPillar,
+  type ExtraPillar, type FindingMod,
 } from "./common.ts";
 
+// ———————————————————————————————————————————————
+// 结构化类型 — detect 返回 MuKuFinding[]
+// ———————————————————————————————————————————————
+// 墓库为单一子类别, 状态由 透墓气 / 被冲 / 被刑 / 天干冲开 / 天干合闭 组合决定.
+// 旧版把状态压进 state, 各触发标志只在 note 字符串里描述.
+
+/** 墓库状态. */
+export type MuKuState =
+  | "静库"       // 墓气透但既未纯开也未合闭 (兜底)
+  | "自动开库"   // 墓气透干无冲克
+  | "冲刑开库"   // 被对冲支冲 / 丑戌未三刑
+  | "天干冲开"   // 丁癸 冲开辰戌, 乙辛 冲开未丑
+  | "天干合闭"   // 戊癸合辰 / 乙庚合未 / 丁壬合戌 / 丙辛合丑
+  | "闭库";      // 墓气未透
+
 interface KuInfo {
-  readonly benqi: string;
-  readonly zhongqi: string;
-  readonly muqi: string;
-  readonly muqiWx: string;
+  readonly benqi: Gan;
+  readonly zhongqi: Gan;
+  readonly muqi: Gan;
+  readonly muqiWx: WuXing;
   readonly name: string;
 }
 
-const MUKU: Readonly<Record<string, KuInfo>> = {
+const MUKU: Readonly<Partial<Record<Zhi, KuInfo>>> = {
   辰: { benqi: "戊", zhongqi: "乙", muqi: "癸", muqiWx: "水", name: "水库" },
   未: { benqi: "己", zhongqi: "丁", muqi: "乙", muqiWx: "木", name: "木库" },
   戌: { benqi: "戊", zhongqi: "辛", muqi: "丁", muqiWx: "火", name: "火库" },
   丑: { benqi: "己", zhongqi: "癸", muqi: "辛", muqiWx: "金", name: "金库" },
 };
+
+export interface MuKuFinding {
+  kind: "墓库";
+  name: string;                 // "辰 · 水库"
+  positions: string;            // "年"
+  slots: readonly [number];
+  state: MuKuState;
+  /** 库支. */
+  zhi: Zhi;
+  /** 库名 (水库/木库/火库/金库). */
+  kuName: string;
+  /** 墓气天干. */
+  muqi: Gan;
+  /** 墓气五行. */
+  muqiWx: WuXing;
+  /** 墓气是否透干. */
+  touMuqi: boolean;
+  /** 被对冲支冲 (辰↔戌, 丑↔未). */
+  beingChong: boolean;
+  /** 被丑戌未三刑. */
+  xingOpen: boolean;
+  /** 天干冲开天库 (丁癸/乙辛). */
+  tianChongOpen: boolean;
+  /** 天干合闭天库. */
+  tianHeClose: boolean;
+  /** extras 中与本柱地支六冲 → 冲开. */
+  opened?: FindingMod[];
+}
 
 /** 对冲支 (辰↔戌, 丑↔未). */
 const CHONG_PAIR: Readonly<Record<string, string>> = {
@@ -54,66 +97,64 @@ function detect(pillars: Pillar[], extras: ExtraPillar[] = []): MuKuFinding[] {
   const out: MuKuFinding[] = [];
   const zhiSet = pillars.map((p) => p.zhi);
 
-  for (const [zhi, ku] of Object.entries(MUKU)) {
-    const idx = zhiSet.indexOf(zhi as (typeof zhiSet)[number]);
+  for (const [zhi, ku] of Object.entries(MUKU) as [Zhi, KuInfo][]) {
+    const idx = zhiSet.indexOf(zhi);
     if (idx < 0) continue;
 
     const touMuqi = hasGan(pillars, ku.muqi);
     const chongCounterpart = CHONG_PAIR[zhi]!;
-    const beingChong = zhiSet.includes(chongCounterpart as (typeof zhiSet)[number]);
+    const beingChong = zhiSet.includes(chongCounterpart as Zhi);
     // 丑戌未 三刑的两两组合 (库被刑)
     const xingOpen = (zhi === "丑" && zhiSet.includes("戌")) ||
                      (zhi === "戌" && zhiSet.includes("未")) ||
                      (zhi === "未" && zhiSet.includes("丑"));
 
     let tianChongOpen = false;
-    let tianChongNote = "";
     for (const [pair, zhis] of Object.entries(TIAN_CHONG_OPEN)) {
-      if (zhis.includes(zhi) && hasGan(pillars, pair[0]!) && hasGan(pillars, pair[1]!) && touMuqi) {
+      if (zhis.includes(zhi) && hasGan(pillars, pair[0]! as Gan) && hasGan(pillars, pair[1]! as Gan) && touMuqi) {
         tianChongOpen = true;
-        tianChongNote = `天干 ${pair} 冲开天库`;
         break;
       }
     }
 
     let tianHeClose = false;
-    let tianHeNote = "";
     for (const [pair, targetZhi] of Object.entries(TIAN_HE_CLOSE)) {
-      if (targetZhi === zhi && hasGan(pillars, pair[0]!) && hasGan(pillars, pair[1]!) && touMuqi) {
+      if (targetZhi === zhi && hasGan(pillars, pair[0]! as Gan) && hasGan(pillars, pair[1]! as Gan) && touMuqi) {
         tianHeClose = true;
-        tianHeNote = `天干 ${pair} 合闭天库`;
         break;
       }
     }
 
-    let state = "静库";
-    let note = "";
+    let state: MuKuState = "静库";
     if (touMuqi && !beingChong && !xingOpen && !tianHeClose) {
       state = "自动开库";
-      note = `${ku.muqi}(${ku.muqiWx}) 透干无冲克 → 不入库, 源源提供 ${ku.muqiWx} 力`;
     } else if (beingChong || xingOpen) {
-      state = "冲/刑开库";
-      note = `${beingChong ? `遇${chongCounterpart}冲` : "丑戌未刑"} → 强行开库, ${ku.muqi}(${ku.muqiWx}) 动`;
+      state = "冲刑开库";
     } else if (tianChongOpen) {
       state = "天干冲开";
-      note = tianChongNote;
     } else if (tianHeClose) {
       state = "天干合闭";
-      note = tianHeNote + ` → ${ku.muqiWx} 被封`;
     } else if (!touMuqi) {
       state = "闭库";
-      note = `${ku.muqi}(${ku.muqiWx}) 未透 → 库中 ${ku.muqiWx} 封存, 需岁运冲开`;
     }
 
     const f: MuKuFinding = {
       kind: "墓库",
       name: `${zhi} · ${ku.name}`,
       positions: POS_NAMES[idx]!,
+      slots: [idx],
       state,
-      note,
-      quality: "neutral",
+      zhi,
+      kuName: ku.name,
+      muqi: ku.muqi,
+      muqiWx: ku.muqiWx,
+      touMuqi,
+      beingChong,
+      xingOpen,
+      tianChongOpen,
+      tianHeClose,
     };
-    const opn = openersByZhi(zhi as Zhi, extras);
+    const opn = openersByZhi(zhi, extras);
     if (opn.length) f.opened = opn;
     out.push(f);
   }

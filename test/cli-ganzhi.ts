@@ -15,9 +15,16 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
-  analyzeGanZhi, type Finding,
+  analyzeGanZhi,
   GAN, ZHI, type Gan, type Zhi, type Pillar,
 } from "../src/index.ts";
+
+/** 测试只关心 kind / state / name 三个字段, 不依赖具体 Finding 联合类型. */
+interface AnyFinding {
+  kind: string;
+  state?: string;
+  name?: string;
+}
 
 const DATA_DIR = fileURLToPath(new URL("../bazi_data/", import.meta.url));
 const GAN_SET: ReadonlySet<string> = new Set(GAN);
@@ -108,21 +115,25 @@ function apiKeys(result: unknown): Set<string> {
 // --- Our 侧 -------------------------------------------------------------
 
 /** 把 Finding 映射到 API 的粗分类. 依 kind + state. */
-function ourCat(f: Finding): string | null {
+function ourCat(f: AnyFinding): string | null {
   switch (f.kind) {
     case "天干五合":
     case "地支六合":  return "合";     // state 形如 "合化X"
-    case "地支三合":
-      if (f.state.startsWith("三合")) return "三合";
-      if (f.state.startsWith("半合")) return "半合";
-      if (f.state.startsWith("拱合")) return "拱合";
-      if (f.state === "暗三合") return "暗三合";
+    case "地支三合": {
+      const st = f.state!;
+      if (st.startsWith("三合")) return "三合";
+      if (st.startsWith("半合")) return "半合";
+      if (st.startsWith("拱合")) return "拱合";
+      if (st === "暗三合") return "暗三合";
       return null;
-    case "地支三会":
-      if (f.state.startsWith("三会")) return "三会";
-      if (f.state.startsWith("拱会")) return "拱会";
-      if (f.state === "暗三会") return "暗三会";
+    }
+    case "地支三会": {
+      const st = f.state!;
+      if (st.startsWith("三会")) return "三会";
+      if (st.startsWith("拱会")) return "拱会";
+      if (st === "暗三会") return "暗三会";
       return null;
+    }
     case "地支暗合":  return "暗合";
     case "地支相刑":
       if (f.state === "自刑") return "刑";
@@ -138,6 +149,7 @@ function ourCat(f: Finding): string | null {
     case "覆载":      return null;
     case "争合":
     case "妒合":      return null;
+    default:         return null;
   }
 }
 
@@ -145,17 +157,17 @@ function ourKeys(pillars: Pillar[]): Set<string> {
   const a = analyzeGanZhi(pillars);
   const keys = new Set<string>();
   if (!a) return keys;
-  const all: Finding[] = [
+  const all: AnyFinding[] = [
     ...a.天干五合, ...a.天干相冲, ...a.天干相克,
     ...a.地支六合, ...a.地支三合, ...a.地支三会, ...a.地支暗合,
     ...a.地支相刑, ...a.地支相冲, ...a.地支相破, ...a.地支相害,
     ...a.墓库,
-    ...a.盖头截脚覆载,
+    ...a.盖头截脚覆载.filter((x): x is NonNullable<typeof x> => x !== undefined),
   ];
   for (const f of all) {
     const cat = ourCat(f);
     if (!cat) continue;
-    const chars = extractChars(f.name);
+    const chars = extractChars(f.name ?? "");
     if (chars.length < 2) continue;
     keys.add(`${canon(chars)}|${cat}`);
   }

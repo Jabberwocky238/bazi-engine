@@ -69,8 +69,6 @@ export function zhiWuxing(z: Zhi): WuXing { return ZHI_WUXING[z]; }
 export type Pos = "年" | "月" | "日" | "时";
 export const POS_NAMES: readonly Pos[] = ["年", "月", "日", "时"];
 
-export type FindingQuality = "good" | "bad" | "neutral";
-
 // ———————————————————————————————————————————————
 // extras (大运/流年/流月) 输入 + 关系
 // ———————————————————————————————————————————————
@@ -88,87 +86,9 @@ export interface ExtraPillar {
 /** Finding 状态字段的来源标记 (dissolved / impacted / opened 各自 FindingMod[]). */
 export interface FindingMod {
   by: ExtraPillar;
-  /** pairwise note, 形如 "申子半三合水" / "甲己合化土" / "辰戌相冲". */
+  /** 触发关系的 finding.name, 形如 "申子半合水局" / "甲己合化土" / "子午相冲". */
   via: string;
 }
-
-// ———————————————————————————————————————————————
-// Finding — 按类别拆为四种, 各自只持有自己关心的字段
-// ———————————————————————————————————————————————
-
-interface BaseFinding {
-  /**
-   * API 全名, 形如:
-   *   "甲己合化土" / "子午相冲" / "巳酉丑三合金局" / "巳酉半合金局"
-   *   "巳丑拱合酉" / "寅辰拱会" / "酉酉相刑" / "寅巳相害" / "辰丑相破"
-   */
-  name: string;
-  /** 位置组合, 如 "年月". */
-  positions: string;
-  /**
-   * 对齐 API short 字段, 形如:
-   *   "合化X" / "半合X局" / "拱合X局" / "拱会X局" / "三合X局" / "三会X局"
-   *   / "相克" / "相冲" / "相刑" / "自刑" / "相害" / "相破" / "暗合" 等.
-   */
-  state: string;
-  note: string;
-  mdKey?: string;
-  quality: FindingQuality;
-}
-
-/**
- * 合类 (天干五合 / 地支六合 / 地支三合 / 地支三会 / 地支暗合) —
- * 可被 extras 冲克 (六冲 / 天干相克 介入参与方).
- */
-export interface HeFinding extends BaseFinding {
-  kind: "天干五合" | "地支六合" | "地支三合" | "地支三会" | "地支暗合";
-  /** 紧贴 = 参与柱全部相邻 (差 = 1). */
-  close: boolean;
-  /** 化气是否成立. */
-  transformed?: boolean;
-  /** 被 extras 冲克 → 合解. */
-  impacted?: FindingMod[];
-}
-
-/**
- * 冲克刑害破类 (天干相冲 / 天干相克 / 地支相冲 / 地支相刑 / 地支相害 / 地支相破) —
- * 可被 extras 引化 (六合 / 半三合 / 天干五合 介入参与方).
- */
-export interface ConflictFinding extends BaseFinding {
-  kind: "天干相冲" | "天干相克" | "地支相冲" | "地支相刑" | "地支相害" | "地支相破";
-  close: boolean;
-  /** 被 extras 引化 → 合解. */
-  dissolved?: FindingMod[];
-}
-
-/** 墓库 (开 / 闭 / 静) — 可被 extras 冲开. */
-export interface MuKuFinding extends BaseFinding {
-  kind: "墓库";
-  /** extras 中地支与本柱地支六冲 → 冲开. */
-  opened?: FindingMod[];
-}
-
-/** 整柱 (盖头 / 截脚 / 覆载) */
-export interface WholePillarFinding {
-  kind: "盖头" | "截脚" | "覆载";
-  subfuzai?: "同气" | "得覆" | "得载";
-  name: string;
-  note: string;
-}
-
-/** 争合 / 妒合 — 天干五合 子态, 单独成条便于展示. */
-export interface ZhengHeFinding extends BaseFinding {
-  kind: "争合" | "妒合";
-}
-
-export type Finding =
-  | HeFinding
-  | ConflictFinding
-  | MuKuFinding
-  | WholePillarFinding
-  | ZhengHeFinding;
-
-export type FindingKind = Finding["kind"];
 
 export interface GanSlot { pos: number; gan: Pillar["gan"] }
 export interface ZhiSlot { pos: number; zhi: Pillar["zhi"] }
@@ -204,16 +124,19 @@ export function hasGan(pillars: Pillar[], gan: string): boolean {
 // extras 状态助手 — detectors 在生成 Finding 时直接挂状态用
 // ———————————————————————————————————————————————
 
-import { pairwiseGan, pairwiseZhi } from "./pairwise.ts";
+import { pairwiseGan, pairwiseZhi } from "./index.ts";
 
-/** extras 中与本组 zhis 形成 六合 / 半三合 的 → 引化 (合解 冲/克/刑/害/破). */
+/** extras 中与本组 zhis 形成 六合 / 半三合 / 拱合 的 → 引化 (合解 冲/克/刑/害/破). */
 export function dissolversByZhi(zhis: Iterable<Zhi>, extras: ExtraPillar[]): FindingMod[] {
   const out: FindingMod[] = [];
   for (const e of extras) {
     for (const z of zhis) {
       const r = pairwiseZhi(e.zhi, z);
-      if (r && (r.kind === "六合" || r.kind === "半三合")) {
-        out.push({ by: e, via: r.note });
+      if (r && (
+        r.kind === "地支六合"
+        || (r.kind === "地支三合" && (r.sub === "半合" || r.sub === "拱合"))
+      )) {
+        out.push({ by: e, via: r.name });
         break;
       }
     }
@@ -228,7 +151,7 @@ export function dissolversByGan(gans: Iterable<Gan>, extras: ExtraPillar[]): Fin
     for (const g of gans) {
       const r = pairwiseGan(e.gan, g);
       if (r && r.kind === "天干五合") {
-        out.push({ by: e, via: r.note });
+        out.push({ by: e, via: r.name });
         break;
       }
     }
@@ -242,8 +165,8 @@ export function impactorsByZhi(zhis: Iterable<Zhi>, extras: ExtraPillar[]): Find
   for (const e of extras) {
     for (const z of zhis) {
       const r = pairwiseZhi(e.zhi, z);
-      if (r && r.kind === "六冲") {
-        out.push({ by: e, via: r.note });
+      if (r && r.kind === "地支相冲") {
+        out.push({ by: e, via: r.name });
         break;
       }
     }
@@ -258,7 +181,7 @@ export function impactorsByGan(gans: Iterable<Gan>, extras: ExtraPillar[]): Find
     for (const g of gans) {
       const r = pairwiseGan(e.gan, g);
       if (r && r.kind === "天干相克") {
-        out.push({ by: e, via: r.note });
+        out.push({ by: e, via: r.name });
         break;
       }
     }
@@ -271,8 +194,8 @@ export function openersByZhi(muZhi: Zhi, extras: ExtraPillar[]): FindingMod[] {
   const out: FindingMod[] = [];
   for (const e of extras) {
     const r = pairwiseZhi(e.zhi, muZhi);
-    if (r && r.kind === "六冲") {
-      out.push({ by: e, via: r.note });
+    if (r && r.kind === "地支相冲") {
+      out.push({ by: e, via: r.name });
     }
   }
   return out;
