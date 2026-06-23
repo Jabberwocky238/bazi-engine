@@ -1,6 +1,6 @@
 /** 五行生克体系 + 日主相对关系. */
-import type { Gan, WuXing, Relation } from "./types.ts";
-import { GAN_WUXING } from "./ganzhi/common.ts";
+import { type Gan, type WuXing, type Relation } from "./types.ts";
+import { ganWuxing } from "./ganzhi/common.ts";
 
 /** 五行相生: key 生 value */
 export const GENERATES: Readonly<Record<WuXing, WuXing>> = {
@@ -21,7 +21,7 @@ export const CONTROLLED_BY: Readonly<Record<WuXing, WuXing>> = {
 
 /** 日主与某天干的五行关系 (不分阴阳). */
 export function relationOf(day: Gan, other: Gan): Relation {
-  const dx = GAN_WUXING[day], ox = GAN_WUXING[other];
+  const dx = ganWuxing(day), ox = ganWuxing(other);
   if (dx === ox) return "同类";
   if (GENERATES[dx] === ox) return "我生";
   if (CONTROLS[dx]  === ox) return "我克";
@@ -40,7 +40,7 @@ export type WuXingRelations = {
 };
 
 export function wuxingRelations(day: Gan): WuXingRelations {
-  const self = GAN_WUXING[day];
+  const self = ganWuxing(day);
   return {
     同类: self,
     我生: GENERATES[self],

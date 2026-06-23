@@ -5,6 +5,35 @@ import { computeShensha, type Shensha } from "./shensha";
 import { computeShishenGan, computeShishenZhi, computeShishenWuxing, type Shishen, SHI_SHEN_CAT, type ShishenCat } from "./shishen";
 import type { BaziInput, Gan, Pillar, Sex, WuXing, Zhi } from "./types";
 
+export interface ICalculator {
+    touGan(): Gan[]
+    touGan(gan: Gan): [boolean, number[]] // 是否透 + 透的柱索引
+    touWx(): WuXing[]
+    touWx(wx: WuXing): [boolean, number[]] // 是否透 + 透的柱索引
+    rootGan(): Gan[] 
+    rootGan(gan: Gan): [boolean, number[]] // 是否有根 + 根的柱索引
+    rootWx(): WuXing[]
+    rootWx(wx: WuXing): [boolean, number[]] // 是否有根 + 根的柱索引
+} 
+
+export interface IShishenCalculator {
+    tou(): Shishen[]
+    tou(ss: Shishen): [boolean, number[]] // 是否透 + 透的柱索引
+    zang(): Shishen[]
+    zang(ss: Shishen): [boolean, number[]] // 是否藏 + 藏的柱索引
+    has(): Shishen[]
+    has(ss: Shishen): [boolean, number[]] // 是否有 + 有的柱索引
+    count(): Record<Shishen, number>
+    count(ss: Shishen): number
+    countCat(): Record<ShishenCat, number>
+    countCat(c: ShishenCat): number
+    strong(): Shishen[]
+    strong(ss: Shishen): boolean
+    strongCat(): ShishenCat[]
+    strongCat(c: ShishenCat): boolean
+    adjacentTou(ss1: Shishen, ss2: Shishen): boolean // 两个十神是否在相邻柱天干紧贴（差 1）
+}
+
 export interface DetailedPillar {
     label: PillarType
     gan: {
@@ -26,16 +55,32 @@ export interface DetailedPillar {
     changsheng: ChangSheng
 }
 
-export class Calculator {
+export class Calculator implements ICalculator {
     private fourPillars: [Pillar, Pillar, Pillar, Pillar | undefined]
     private mustPillars: Pillar[]
+    private sex: Sex
 
     constructor(
         public bazi: BaziInput,
-        public sex: Sex
     ) {
+        this.sex = bazi.sex
         this.fourPillars = [this.bazi.year, this.bazi.month, this.bazi.day, this.bazi.hour]
         this.mustPillars = this.fourPillars.filter((p): p is Pillar => !!p)
+    }
+
+    /** 日主天干。 */
+    get dayGan(): Gan { return this.bazi.day.gan }
+
+    /**
+     * 透干柱索引 —— 年/月/时三柱 (排除日柱: 日主自身不计"透").
+     * mustPillars 已滤掉缺失的时柱, 这里按四柱原位扫描, 跳过 i===2 (日柱).
+     */
+    private touSlots(): number[] {
+        const out: number[] = []
+        this.fourPillars.forEach((p, i) => {
+            if (p && i !== 2) out.push(i)
+        })
+        return out
     }
 
     pillars(): DetailedPillar[] {
@@ -73,6 +118,103 @@ export class Calculator {
         return new ShishenCalculator(this)
     }
 
+    // ———————————————————————————————————————————————
+    // ICalculator: 透干 (年/月/时天干) / 有根 (地支藏干)
+    // ———————————————————————————————————————————————
+
+    /** 透出的天干列表 (按柱序, 去重). */
+    touGan(): Gan[]
+    /** 指定天干是否透 + 透的柱索引 (年/月/时). */
+    touGan(gan: Gan): [boolean, number[]]
+    touGan(gan?: Gan): Gan[] | [boolean, number[]] {
+        if (gan === undefined) {
+            const seen = new Set<Gan>()
+            const out: Gan[] = []
+            this.touSlots().forEach((i) => {
+                const g = this.fourPillars[i]!.gan
+                if (!seen.has(g)) { seen.add(g); out.push(g) }
+            })
+            return out
+        }
+        const slots = this.touSlots().filter((i) => this.fourPillars[i]!.gan === gan)
+        return [slots.length > 0, slots]
+    }
+
+    /** 透出的五行列表 (按柱序, 去重). */
+    touWx(): WuXing[]
+    /** 指定五行是否透 + 透的柱索引. */
+    touWx(wx: WuXing): [boolean, number[]]
+    touWx(wx?: WuXing): WuXing[] | [boolean, number[]] {
+        if (wx === undefined) {
+            const seen = new Set<WuXing>()
+            const out: WuXing[] = []
+            this.touSlots().forEach((i) => {
+                const w = ganWuxing(this.fourPillars[i]!.gan)
+                if (!seen.has(w)) { seen.add(w); out.push(w) }
+            })
+            return out
+        }
+        const slots = this.touSlots().filter((i) => ganWuxing(this.fourPillars[i]!.gan) === wx)
+        return [slots.length > 0, slots]
+    }
+
+    /** 地支藏干含此天干的柱索引 (有根). */
+    private rootSlotsOfGan(gan: Gan): number[] {
+        const out: number[] = []
+        this.mustPillars.forEach((p, i) => {
+            if (CANG_GAN[p.zhi].includes(gan)) out.push(i)
+        })
+        return out
+    }
+
+    /** 地支藏干含此五行的柱索引 (有根). */
+    private rootSlotsOfWx(wx: WuXing): number[] {
+        const out: number[] = []
+        this.mustPillars.forEach((p, i) => {
+            if (CANG_GAN[p.zhi].some((g) => ganWuxing(g) === wx)) out.push(i)
+        })
+        return out
+    }
+
+    /** 有根的天干列表 (藏干含之, 去重). */
+    rootGan(): Gan[]
+    /** 指定天干是否有根 + 根的柱索引. */
+    rootGan(gan: Gan): [boolean, number[]]
+    rootGan(gan?: Gan): Gan[] | [boolean, number[]] {
+        if (gan === undefined) {
+            const seen = new Set<Gan>()
+            const out: Gan[] = []
+            this.mustPillars.forEach((p) => {
+                CANG_GAN[p.zhi].forEach((g) => {
+                    if (!seen.has(g)) { seen.add(g); out.push(g) }
+                })
+            })
+            return out
+        }
+        const slots = this.rootSlotsOfGan(gan)
+        return [slots.length > 0, slots]
+    }
+
+    /** 有根的五行列表 (藏干含之, 去重). */
+    rootWx(): WuXing[]
+    /** 指定五行是否有根 + 根的柱索引. */
+    rootWx(wx: WuXing): [boolean, number[]]
+    rootWx(wx?: WuXing): WuXing[] | [boolean, number[]] {
+        if (wx === undefined) {
+            const seen = new Set<WuXing>()
+            const out: WuXing[] = []
+            this.mustPillars.forEach((p) => {
+                CANG_GAN[p.zhi].forEach((g) => {
+                    const w = ganWuxing(g)
+                    if (!seen.has(w)) { seen.add(w); out.push(w) }
+                })
+            })
+            return out
+        }
+        const slots = this.rootSlotsOfWx(wx)
+        return [slots.length > 0, slots]
+    }
+
     /** 天干五行计数。 */
     ganWxCount(wx: WuXing): number {
         return this.mustPillars.filter((p) => ganWuxing(p.gan) === wx).length
@@ -85,14 +227,6 @@ export class Calculator {
         }).length
     }
 
-    /** 年/月/时三柱天干是否透此五行。 */
-    touWx(wx: WuXing): boolean {
-        return this.mustPillars.some((p, i) => i !== 2 && ganWuxing(p.gan) === wx)
-    }
-    /** 地支本气是否有根。 */
-    rootWx(wx: WuXing): boolean {
-        return this.zhiMainWxCount(wx) > 0
-    }
     /** 本气或中气含此五行。 */
     rootExt(wx: WuXing): boolean {
         return this.pillars().some((p) => {
@@ -103,91 +237,155 @@ export class Calculator {
     }
 }
 
-export class ShishenCalculator {
+export class ShishenCalculator implements IShishenCalculator {
     constructor(
         private calculator: Calculator,
     ) { }
 
-    /** 天干是否透某十神。 */
-    tou(ss: Shishen): boolean {
-        return this.calculator.pillars().some((p, i) => i !== 2 && p.gan.shishen === ss)
-    }
-    /** 天干是否透某类别十神。 */ 
-    touCat(c: ShishenCat): boolean {
-        return this.calculator.pillars().some((p, i) => i !== 2 && SHI_SHEN_CAT[p.gan.shishen as Shishen] === c)
-    }
-    /** 地支藏干是否含某十神。 */
-    zang(ss: Shishen): boolean {
-        return this.calculator.pillars().some((p) => p.zhi.cangGan.some((g) => g.shishen === ss))
-    }
-    /** 透或藏是否含某十神。 */
-    has(ss: Shishen): boolean {
-        return this.tou(ss) || this.zang(ss)
-    }
-    /** 透或藏是否含某类别十神。 */
-    hasCat(c: ShishenCat): boolean {
-        return this.touCat(c) || this.calculator.pillars().some((p) => p.zhi.cangGan.some((g) => SHI_SHEN_CAT[g.shishen] === c))
-    }
-    /** 某十神在地支本气出现的柱索引列表。 */
-    mainAt(ss: Shishen): number[] {
-        const out: number[] = []
-        this.calculator.pillars().forEach((p, i) => {
-            if (p.zhi.cangGan.some((g) => g.shishen === ss)) out.push(i)
+    private pillars(): DetailedPillar[] { return this.calculator.pillars() }
+
+    // ———————————————————————————————————————————————
+    // 透 (年/月/时天干, 排除日主) / 藏 (地支藏干) / 有 (透∪藏)
+    // ———————————————————————————————————————————————
+
+    /** 透出的十神列表 (去重). */
+    tou(): Shishen[]
+    /** 指定十神是否透 + 透的柱索引 (年/月/时). */
+    tou(ss: Shishen): [boolean, number[]]
+    tou(ss?: Shishen): Shishen[] | [boolean, number[]] {
+        const slots: number[] = []
+        const seen = new Set<Shishen>()
+        this.pillars().forEach((p, i) => {
+            if (i !== 2 && p.gan.shishen !== "日主") {
+                slots.push(i)
+                seen.add(p.gan.shishen as Shishen)
+            }
         })
-        return out
+        if (ss === undefined) return [...seen]
+        const hit = slots.filter((i) => this.pillars()[i]!.gan.shishen === ss)
+        return [hit.length > 0, hit]
     }
-    /** 透或在地支本气出现，即"有力"。 */
-    strong(ss: Shishen): boolean {
-        return this.tou(ss) || this.mainAt(ss).length > 0
+
+    /** 藏于地支的十神列表 (去重). */
+    zang(): Shishen[]
+    /** 指定十神是否藏 + 藏的柱索引. */
+    zang(ss: Shishen): [boolean, number[]]
+    zang(ss?: Shishen): Shishen[] | [boolean, number[]] {
+        const seen = new Set<Shishen>()
+        const hitSlots: number[] = []
+        this.pillars().forEach((p, i) => {
+            let any = false
+            p.zhi.cangGan.forEach((g) => {
+                seen.add(g.shishen)
+                if (g.shishen === ss) any = true
+            })
+            if (ss !== undefined && any) hitSlots.push(i)
+        })
+        if (ss === undefined) return [...seen]
+        return [hitSlots.length > 0, hitSlots]
     }
-    /** 某类别十神是否透或在地支本气出现。 */
-    strongCat(c: ShishenCat): boolean {
-        return this.calculator.pillars().some((p, i) => {
-            if (i !== 2 && SHI_SHEN_CAT[p.gan.shishen as Shishen] === c) return true
-            const h = p.zhi.cangGan[0]?.shishen
-            return !!h && SHI_SHEN_CAT[h] === c
+
+    /** 透或藏的十神列表 (去重). */
+    has(): Shishen[]
+    /** 指定十神是否有 (透∪藏) + 有的柱索引. */
+    has(ss: Shishen): [boolean, number[]]
+    has(ss?: Shishen): Shishen[] | [boolean, number[]] {
+        const touSet = new Set(this.tou())
+        const zangSet = new Set(this.zang())
+        const union = new Set<Shishen>([...touSet, ...zangSet])
+        if (ss === undefined) return [...union]
+        const slots = new Set<number>()
+        this.pillars().forEach((p, i) => {
+            if (i !== 2 && p.gan.shishen === ss) slots.add(i)
+            if (p.zhi.cangGan.some((g) => g.shishen === ss)) slots.add(i)
+        })
+        const arr = [...slots].sort((a, b) => a - b)
+        return [arr.length > 0, arr]
+    }
+
+    /** 各十神出现次数 (透 + 藏). */
+    count(): Record<Shishen, number>
+    /** 指定十神出现次数. */
+    count(ss: Shishen): number
+    count(ss?: Shishen): Record<Shishen, number> | number {
+        const rec = this.countAll()
+        if (ss === undefined) return rec
+        return rec[ss]
+    }
+
+    /** 各类别十神出现次数. */
+    countCat(): Record<ShishenCat, number>
+    /** 指定类别十神出现次数. */
+    countCat(c: ShishenCat): number
+    countCat(c?: ShishenCat): Record<ShishenCat, number> | number {
+        const rec = this.countAllCat()
+        if (c === undefined) return rec
+        return rec[c]
+    }
+
+    /** 有力的十神列表 (透或藏). */
+    strong(): Shishen[]
+    /** 指定十神是否有力 (透或藏). */
+    strong(ss: Shishen): boolean
+    strong(ss?: Shishen): Shishen[] | boolean {
+        if (ss === undefined) return this.has()
+        const [t] = this.has(ss)
+        return t
+    }
+
+    /** 有力的十神类别列表. */
+    strongCat(): ShishenCat[]
+    /** 指定类别是否有力. */
+    strongCat(c: ShishenCat): boolean
+    strongCat(c?: ShishenCat): ShishenCat[] | boolean {
+        const cats: ShishenCat[] = ["比劫", "印", "食伤", "财", "官杀"]
+        if (c === undefined) return cats.filter((cat) => this.strongCat(cat))
+        return this.pillars().some((p, i) => {
+            if (i !== 2 && p.gan.shishen !== "日主"
+                && SHI_SHEN_CAT[p.gan.shishen as Shishen] === c) return true
+            return p.zhi.cangGan.some((g) => SHI_SHEN_CAT[g.shishen] === c)
         })
     }
-    /** 某十神出现次数（透 + 藏）。 */
-    countOf(ss: Shishen): number {
-        const { ganSs, allZhiArr } = this.calculator.pillars().reduce((acc, p) => {
-            if (p.gan.shishen) acc.ganSs.push(p.gan.shishen as Shishen)
-            p.zhi.cangGan.forEach((g) => {
-                if (g.shishen) acc.allZhiArr.push(g.shishen as Shishen)
-            })
-            return acc
-        }, { ganSs: [] as Shishen[], allZhiArr: [] as Shishen[] })
-        let n = 0
-        for (const g of ganSs) if (g === ss) n++
-        for (const z of allZhiArr) if (z === ss) n++
-        return n
-    }
-    /** 某类别十神出现次数（透 + 藏）。 */
-    countCat(c: ShishenCat): number {
-        const { ganSs, allZhiArr } = this.calculator.pillars().reduce((acc, p) => {
-            if (p.gan.shishen) acc.ganSs.push(p.gan.shishen as Shishen)
-            p.zhi.cangGan.forEach((g) => {
-                if (g.shishen) acc.allZhiArr.push(g.shishen as Shishen)
-            })
-            return acc
-        }, { ganSs: [] as Shishen[], allZhiArr: [] as Shishen[] })
-        let n = 0
-        for (const g of ganSs) if (SHI_SHEN_CAT[g] === c) n++
-        for (const z of allZhiArr) if (SHI_SHEN_CAT[z] === c) n++
-        return n
-    }
-    /** 两个十神是否在相邻柱天干紧贴（差 1）。 */
-    adjacentTou(pillars: DetailedPillar[], s1: Shishen, s2: Shishen): boolean {
-        const posOf = (s: Shishen) => {
+
+    /** 两个十神是否在相邻柱天干紧贴 (差 1, 仅年/月/时). */
+    adjacentTou(ss1: Shishen, ss2: Shishen): boolean {
+        const posOf = (s: Shishen): number[] => {
             const out: number[] = []
-            if (pillars[0]?.gan.shishen === s) out.push(0)
-            if (pillars[1]?.gan.shishen === s) out.push(1)
-            if (pillars[3]?.gan.shishen === s) out.push(3)
+            this.pillars().forEach((p, i) => {
+                if (i !== 2 && p.gan.shishen === s) out.push(i)
+            })
             return out
         }
-        const p1 = posOf(s1)
-        const p2 = posOf(s2)
+        const p1 = posOf(ss1)
+        const p2 = posOf(ss2)
         for (const a of p1) for (const b of p2) if (Math.abs(a - b) === 1) return true
         return false
+    }
+
+    // ———————————————————————————————————————————————
+    // 内部: 计数 (透 + 藏)
+    // ———————————————————————————————————————————————
+
+    private countAll(): Record<Shishen, number> {
+        const rec = {} as Record<Shishen, number>
+        this.pillars().forEach((p) => {
+            if (p.gan.shishen !== "日主") {
+                const s = p.gan.shishen as Shishen
+                rec[s] = (rec[s] ?? 0) + 1
+            }
+            p.zhi.cangGan.forEach((g) => {
+                rec[g.shishen] = (rec[g.shishen] ?? 0) + 1
+            })
+        })
+        return rec
+    }
+
+    private countAllCat(): Record<ShishenCat, number> {
+        const rec: Record<ShishenCat, number> = { 比劫: 0, 印: 0, 食伤: 0, 财: 0, 官杀: 0 }
+        this.pillars().forEach((p) => {
+            if (p.gan.shishen !== "日主") rec[SHI_SHEN_CAT[p.gan.shishen as Shishen]]++
+            p.zhi.cangGan.forEach((g) => rec[SHI_SHEN_CAT[g.shishen]]++)
+        })
+        return rec
     }
 }
