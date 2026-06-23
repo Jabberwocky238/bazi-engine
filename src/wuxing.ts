@@ -1,6 +1,12 @@
 /** 五行生克体系 + 日主相对关系. */
-import { type Gan, type WuXing, type Relation } from "./types.ts";
+import { type Gan, type WuXing, type Relation, type Zhi, GAN } from "./types.ts";
 import { ganWuxing } from "./ganzhi/common.ts";
+import { LunarUtil } from "lunar-typescript";
+
+/** 地支藏干 (dataset convention). */
+export const CANG_GAN = LunarUtil.ZHI_HIDE_GAN as Record<Zhi, Gan[]>;
+export const GAN_WUXING = LunarUtil.WU_XING_GAN as Record<Gan, WuXing>;
+export const ZHI_WUXING = LunarUtil.WU_XING_ZHI as Record<Zhi, WuXing>;
 
 /** 五行相生: key 生 value */
 export const GENERATES: Readonly<Record<WuXing, WuXing>> = {
@@ -48,4 +54,10 @@ export function wuxingRelations(day: Gan): WuXingRelations {
     克我: CONTROLLED_BY[self],
     生我: GENERATED_BY[self],
   };
+}
+
+export function wuxingGan(wuxing: WuXing, yang: boolean): Gan {
+  const gans = Object.entries(GAN_WUXING).filter(([g, x]) => x === wuxing).map(([g]) => g as Gan);
+  if (gans.length !== 2) throw new Error(`unreachable: wuxingGan(${wuxing}, ${yang})`);
+  return gans.find(g => (GAN_WUXING[g] === wuxing) && ((GAN.indexOf(g) % 2 === 0) === yang))!;
 }

@@ -18,8 +18,6 @@ import { LunarUtil } from "lunar-typescript";
 import type { Gan, Pillar, WuXing, Zhi } from "../types.ts";
 import { GAN } from "../types.ts";
 
-/** 地支藏干 (dataset convention). */
-export const CANG_GAN = LunarUtil.ZHI_HIDE_GAN as Record<Zhi, Gan[]>;
 
 /** 阳干: 甲丙戊庚壬 (GAN 索引偶数). */
 export function isYangGan(g: Gan): boolean {

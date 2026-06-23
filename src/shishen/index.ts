@@ -3,7 +3,7 @@
  * (a) 汇总注册表  (b) 派发函数 shishenOf  (c) 批量计算 computeShishen.
  */
 import type { Gan, Pillar, Relation, WuXing, Zhi } from "../types.ts";
-import { CANG_GAN } from "../ganzhi/common.ts";
+import { CANG_GAN } from "../wuxing.ts";
 import { relationOf, wuxingRelations } from "../wuxing.ts";
 
 import { 比肩 } from "./比肩.ts";
