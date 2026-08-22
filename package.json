@@ -1,6 +1,6 @@
 {
   "name": "@jabberwocky238/bazi-engine",
-  "version": "0.0.0",
+  "version": "1.0.5",
   "license": "MIT",
   "type": "module",
   "main": "src/index.ts",
