@@ -12,6 +12,7 @@ export const ZHI = ["子","丑","寅","卯","辰","巳","午","未","申","酉",
 export type WuXing = typeof WUXING[number];
 export type Gan = typeof GAN[number];
 export type Zhi = typeof ZHI[number];
+export type Muku = Extract<Zhi, "辰" | "未" | "戌" | "丑">;
 export type GanZhi = `${Gan}${Zhi}`;
 export type TriadKey = "申子辰" | "寅午戌" | "亥卯未" | "巳酉丑";
 export type NayinWuxing = "金" | "火" | "木" | "土" | "水";

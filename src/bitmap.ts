@@ -35,5 +35,20 @@ function createTable<
   return build(table, 0) as KeyedTensor<TensorLeaf<T>, Keys>;
 }
 
-export { createTable }
-export type { Table }
+type BitListT<Items extends readonly unknown[], Length extends number> = readonly (Items[number] | undefined)[] & { readonly length: Length };
+
+class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
+  public constructor(public readonly items: Items, public readonly length: BitLength) {
+    if (!Number.isInteger(length) || length < 0 || length > 31 || items.length > 2 ** length) throw new RangeError("Invalid bit length");
+  }
+  public decode(mask: number): BitListT<Items, Items["length"]> {
+    return Array.from({ length: this.items.length }, (_, bit) => (mask & (1 << bit)) !== 0 ? this.items[bit] : undefined) as unknown as BitListT<Items, Items["length"]>;
+  }
+}
+
+function createBitList<const Items extends readonly PropertyKey[], const Length extends number>(items: Items, length: Length): BitList<Items, Length> {
+  return new BitList(items, length);
+}
+
+export { createTable, createBitList }
+export type { Table, BitList }
