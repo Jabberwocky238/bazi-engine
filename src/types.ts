@@ -5,6 +5,7 @@
  * (五行生克表 / 十神 / 神煞等) 拆入对应模块.
  */
 
+import { LunarUtil } from "lunar-typescript";
 import { createTable, type Table } from "./bitmap.ts";
 export const WUXING = ["木", "火", "土", "金", "水"] as const;
 export type WuXing = typeof WUXING[number]
@@ -19,7 +20,25 @@ export type Season = "春" | "夏" | "秋" | "冬";
 /** sex: 1 = 男, 0 = 女. 性别相关神煞 (如 元辰) 必填. */
 export type Sex = 0 | 1;
 export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour?: Pillar; sex: Sex };
-
+export const CANG_GAN = LunarUtil.ZHI_HIDE_GAN as Record<Zhi, Gan[]>;
+export const GAN_WUXING = LunarUtil.WU_XING_GAN as Record<Gan, WuXing>;
+export const ZHI_WUXING = LunarUtil.WU_XING_ZHI as Record<Zhi, WuXing>;
+/** 五行相生: key 生 value */
+export const GENERATES: Readonly<Record<WuXing, WuXing>> = {
+    木: "火", 火: "土", 土: "金", 金: "水", 水: "木",
+};
+/** 五行相克: key 克 value */
+export const CONTROLS: Readonly<Record<WuXing, WuXing>> = {
+    木: "土", 土: "水", 水: "火", 火: "金", 金: "木",
+};
+/** 反查: value 生 key */
+export const GENERATED_BY: Readonly<Record<WuXing, WuXing>> = {
+    火: "木", 土: "火", 金: "土", 水: "金", 木: "水",
+};
+/** 反查: value 克 key */
+export const CONTROLLED_BY: Readonly<Record<WuXing, WuXing>> = {
+    土: "木", 水: "土", 火: "水", 金: "火", 木: "金",
+};
 /** 日主与某天干的五行关系 (不分阴阳). */
 export type Relation = "同类" | "我生" | "我克" | "克我" | "生我";
 export const TRIAD_NAMES = [
@@ -53,6 +72,34 @@ export const TRIAD_TABLE_WRAPPER = createTable(
     TRIAD_KEYS,
     TRIAD_NAMES,
 );
+const WUXING_RELATION_TABLE = [
+    //       木      火      土      金      水
+    ["同类", "我生", "我克", "克我", "生我"], // 木
+    ["生我", "同类", "我生", "我克", "克我"], // 火
+    ["克我", "生我", "同类", "我生", "我克"], // 土
+    ["我生", "克我", "生我", "同类", "我生"], // 金
+    ["生我", "我克", "克我", "生我", "同类"], // 水
+] as const satisfies Table<Relation, [5, 5]>;
+export const WUXING_RELATION_TABLE_WRAPPER = createTable(WUXING_RELATION_TABLE, WUXING, WUXING);
+export const RELATIONS = [
+    "同类",
+    "我生",
+    "我克",
+    "克我",
+    "生我",
+] as const satisfies readonly Relation[];
+const WUXING_BY_RELATION = [
+    ["木", "火", "土", "金", "水"], // 同类
+    ["火", "土", "金", "水", "木"], // 我生
+    ["土", "水", "火", "金", "木"], // 我克
+    ["金", "木", "水", "火", "土"], // 克我
+    ["水", "木", "金", "土", "火"], // 生我
+] as const satisfies Table<WuXing, [5, 5]>;
+export const WUXING_BY_RELATION_TABLE = createTable(
+    WUXING_BY_RELATION,
+    RELATIONS,
+    WUXING,
+);
 export class TriadC {
     private constructor(public readonly key: TriadKey) { }
 
@@ -67,10 +114,23 @@ export class TriadC {
         return TriadC.map[key];
     }
 
-    get(name: TriadName): Zhi {
-        return TRIAD_TABLE_WRAPPER[this.key][name];
-    }
+    get(name: TriadName): ZhiC;
+    get(zhi: ZhiC): TriadName;
 
+    get(value: TriadName | ZhiC): ZhiC | TriadName {
+        if (typeof value === "string") {
+            return ZhiC.from(TRIAD_TABLE_WRAPPER[this.key][value]);
+        }
+        const entries = Object.entries(TRIAD_TABLE_WRAPPER[this.key]) as [
+            TriadName,
+            Zhi,
+        ][]
+        const found = entries.find(([, zhi]) => zhi === value.str);
+        if (!found) {
+            throw new Error(`${value.str} is not part of triad ${this.key}`);
+        }
+        return found[0];
+    }
     isYearOnly(name: TriadName): boolean {
         return name === "灾煞";
     }
@@ -102,6 +162,27 @@ export class WuXingC {
 
     static from(str: WuXing): WuXingC {
         return WuXingC.map[str];
+    }
+    relationOf(wx: WuXingC) {
+        return WUXING_RELATION_TABLE_WRAPPER[this.str][wx.str]
+    }
+    get shengwo(): WuXingC {
+        return WuXingC.from(WUXING_BY_RELATION_TABLE["生我"][this.str]);
+    }
+    get wosheng(): WuXingC {
+        return WuXingC.from(WUXING_BY_RELATION_TABLE["我生"][this.str]);
+    }
+    get woke(): WuXingC {
+        return WuXingC.from(WUXING_BY_RELATION_TABLE["我克"][this.str]);
+    }
+    get kewo(): WuXingC {
+        return WuXingC.from(WUXING_BY_RELATION_TABLE["克我"][this.str]);
+    }
+    gan(yang: boolean): GanC {
+        const gans = Object.entries(GAN_WUXING).filter(([g, x]) => x === this.str).map(([g]) => g as Gan);
+        if (gans.length !== 2) throw new Error(`unreachable: wuxingGan(${this.str}, ${yang})`);
+        const ret = gans.find(g => (GAN_WUXING[g] === this.str) && ((GAN.indexOf(g) % 2 === 0) === yang))!;
+        return GanC.from(ret)
     }
 }
 
@@ -164,6 +245,9 @@ export class ZhiC {
             return "巳酉丑";
         }
         return TriadC.from(ret())
+    }
+    canggan(): GanC[] {
+        return CANG_GAN[this.str].map((i) => GanC.from(i))
     }
 }
 export class MukuC {
