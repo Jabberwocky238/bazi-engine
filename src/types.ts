@@ -7,6 +7,8 @@
 
 import { LunarUtil } from "lunar-typescript";
 import { createTable, type Table } from "./bitmap.ts";
+import type { ShishenC } from "./shishen.ts";
+import { shishenOf } from "./shishen.ts";
 export const WUXING = ["木", "火", "土", "金", "水"] as const;
 export type WuXing = typeof WUXING[number]
 export const GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
@@ -183,21 +185,21 @@ export function changshengState(gan: Gan, zhi: Zhi): ChangSheng {
 }
 
 export function isYueling(dayGan: Gan, monthZhi: Zhi, targetZhi: Zhi): boolean {
-  return changshengState(dayGan, targetZhi) === changshengState(dayGan, monthZhi);
+    return changshengState(dayGan, targetZhi) === changshengState(dayGan, monthZhi);
 }
 
 export function isLu(dayGan: Gan, targetZhi: Zhi): boolean {
-  return changshengState(dayGan, targetZhi) === "临官";
+    return changshengState(dayGan, targetZhi) === "临官";
 }
 
 export function isRen(dayGan: Gan, targetZhi: Zhi): boolean {
-  return changshengState(dayGan, targetZhi) === "帝旺";
+    return changshengState(dayGan, targetZhi) === "帝旺";
 }
 /** 月令 / 禄位 / 刃: 以月支和日干的十二长生状态推算目标地支. */
 function zhiByChangsheng(dayGan: Gan, state: ChangSheng): Zhi {
-  const zhi = ZHI.find(z => changshengState(dayGan, z) === state);
-  if (!zhi) throw new Error(`unreachable: no ${state} zhi for ${dayGan}`);
-  return zhi;
+    const zhi = ZHI.find(z => changshengState(dayGan, z) === state);
+    if (!zhi) throw new Error(`unreachable: no ${state} zhi for ${dayGan}`);
+    return zhi;
 }
 
 /** 十干禄位 = 十二长生「临官」位. */
@@ -268,20 +270,11 @@ export class WuXingC {
     static from(str: WuXing): WuXingC {
         return WuXingC.map[str];
     }
-    relationOf(wx: WuXingC) {
+    relationOf(wx: WuXingC): Relation {
         return WUXING_RELATION_TABLE_WRAPPER[this.str][wx.str]
     }
-    get shengwo(): WuXingC {
-        return WuXingC.from(WUXING_BY_RELATION_TABLE["生我"][this.str]);
-    }
-    get wosheng(): WuXingC {
-        return WuXingC.from(WUXING_BY_RELATION_TABLE["我生"][this.str]);
-    }
-    get woke(): WuXingC {
-        return WuXingC.from(WUXING_BY_RELATION_TABLE["我克"][this.str]);
-    }
-    get kewo(): WuXingC {
-        return WuXingC.from(WUXING_BY_RELATION_TABLE["克我"][this.str]);
+    relationFrom(relation: Relation): WuXingC {
+        return WuXingC.from(WUXING_BY_RELATION_TABLE[relation][this.str])
     }
     gan(yang: boolean): GanC {
         const gans = Object.entries(GAN_WUXING).filter(([g, x]) => x === this.str).map(([g]) => g as Gan);
@@ -310,6 +303,18 @@ export class GanC {
     static from(str: Gan): GanC {
         return GanC.map[str];
     }
+    get wuxing(): WuXingC {
+        return WuXingC.from(GAN_WUXING[this.str])
+    }
+    shishenGan(targetGan: GanC): ShishenC {
+        return shishenOf(this, targetGan);
+    }
+    shishenZhi(targetZhi: ZhiC): ShishenC[] {
+        return targetZhi.canggan().map(g => shishenOf(this, g));
+    }
+    shishenWuxing(targetShishen: ShishenC): WuXingC {
+        return this.wuxing.relationFrom(targetShishen.cat.relation)
+    }
 }
 
 export class ZhiC {
@@ -333,7 +338,9 @@ export class ZhiC {
     static from(str: Zhi): ZhiC {
         return ZhiC.map[str];
     }
-
+    get wuxing(): WuXingC {
+        return WuXingC.from(ZHI_WUXING[this.str])
+    }
     /** 春: 寅卯辰; 夏: 巳午未; 秋: 申酉戌; 冬: 亥子丑. */
     season(): SeasonC {
         if ("寅卯辰".includes(this.str)) return SeasonC.from("春");
@@ -376,3 +383,4 @@ export class PillarC {
         public readonly zhi: ZhiC,
     ) { }
 }
+

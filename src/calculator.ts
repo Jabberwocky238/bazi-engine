@@ -2,7 +2,7 @@ import { changshengState, type ChangSheng } from "./types";
 import { ganWuxing, PILLAR_LABELS, zhiWuxing, type PillarType } from "./ganzhi";
 import { nayinNameOf } from "./types";
 import { computeShensha, type Shensha } from "./shensha";
-import { computeShishenGan, computeShishenZhi, computeShishenWuxing, type Shishen, SHI_SHEN_CAT, type ShishenCat, ShishenC } from "./shishen";
+import { type Shishen, SHISHEN_CAT, type ShishenCat, ShishenC, ShishenCC } from "./shishen";
 import type { BaziInput, Gan, GanC, Pillar, Sex, WuXing, WuXingC, Zhi } from "./types";
 import { CANG_GAN } from "./types";
 
@@ -24,15 +24,15 @@ export interface IShishenCalculator {
     zang(ss: ShishenC): [boolean, number[]] // 是否藏 + 藏的柱索引
     has(): ShishenC[]
     has(ss: ShishenC): [boolean, number[]] // 是否有 + 有的柱索引
-    count(): Record<ShishenC, number>
+    count(): Record<Shishen, number>
     count(ss: ShishenC): number
     countCat(): Record<ShishenCat, number>
-    countCat(c: ShishenCat): number
-    strong(): Shishen[]
-    strong(ss: Shishen): boolean
-    strongCat(): ShishenCat[]
-    strongCat(c: ShishenCat): boolean
-    adjacentTou(ss1: Shishen, ss2: Shishen): boolean // 两个十神是否在相邻柱天干紧贴（差 1）
+    countCat(c: ShishenCC): number
+    strong(): ShishenC[]
+    strong(ss: ShishenC): boolean
+    strongCat(): ShishenCC[]
+    strongCat(c: ShishenCC): boolean
+    adjacentTou(ss1: ShishenC, ss2: ShishenC): boolean // 两个十神是否在相邻柱天干紧贴（差 1）
 }
 
 export interface DetailedPillar {
@@ -124,13 +124,13 @@ export class Calculator implements ICalculator {
     // ———————————————————————————————————————————————
 
     /** 透出的天干列表 (按柱序, 去重). */
-    touGan(): Gan[]
+    touGan(): GanC[]
     /** 指定天干是否透 + 透的柱索引 (年/月/时). */
-    touGan(gan: Gan): [boolean, number[]]
-    touGan(gan?: Gan): Gan[] | [boolean, number[]] {
+    touGan(gan: GanC): [boolean, number[]]
+    touGan(gan?: GanC): GanC[] | [boolean, number[]] {
         if (gan === undefined) {
-            const seen = new Set<Gan>()
-            const out: Gan[] = []
+            const seen = new Set<GanC>()
+            const out: GanC[] = []
             this.touSlots().forEach((i) => {
                 const g = this.fourPillars[i]!.gan
                 if (!seen.has(g)) { seen.add(g); out.push(g) }
