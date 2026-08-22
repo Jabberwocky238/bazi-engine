@@ -1,21 +1,20 @@
-import { changshengState, type ChangSheng } from "./types";
-import { ganWuxing, PILLAR_LABELS, zhiWuxing, type PillarType } from "./ganzhi";
+import { changshengState, GAN_WUXING, type ChangSheng } from "./types";
+import { PILLAR_LABELS, type PillarType } from "./ganzhi";
 import { nayinNameOf } from "./types";
 import { computeShensha, type Shensha } from "./shensha";
-import { type Shishen, SHISHEN_CAT, type ShishenCat, ShishenC, ShishenCC } from "./shishen";
-import type { BaziInput, Gan, GanC, Pillar, Sex, WuXing, WuXingC, Zhi } from "./types";
-import { CANG_GAN } from "./types";
+import { type Shishen, type ShishenCat, shishenOf, ShishenC, ShishenCC } from "./shishen";
+import { GanC, PillarC, WuXingC, type BaziInput, type Gan, type Sex, type ZhiC } from "./types";
 
 export interface ICalculator {
     touGan(): GanC[]
     touGan(gan: GanC): [boolean, number[]] // 是否透 + 透的柱索引
     touWx(): WuXingC[]
     touWx(wx: WuXingC): [boolean, number[]] // 是否透 + 透的柱索引
-    rootGan(): GanC[] 
+    rootGan(): GanC[]
     rootGan(gan: GanC): [boolean, number[]] // 是否有根 + 根的柱索引
     rootWx(): WuXingC[]
     rootWx(wx: WuXingC): [boolean, number[]] // 是否有根 + 根的柱索引
-} 
+}
 
 export interface IShishenCalculator {
     tou(): ShishenC[]
@@ -38,35 +37,31 @@ export interface IShishenCalculator {
 export interface DetailedPillar {
     label: PillarType
     gan: {
-        name: Gan
-        wuxing: WuXing
-        shishen: Shishen | '日主'
+        name: GanC
+        isRizhu: boolean
     }
-    zhi: {
-        name: Zhi
-        wuxing: WuXing
-        cangGan: {
-            name: Gan
-            shishen: Shishen
-            wuxing: WuXing
-        }[]
-    }
+    zhi: ZhiC
     nayin: string
     shensha: Shensha[]
     changsheng: ChangSheng
 }
 
 export class Calculator implements ICalculator {
-    private fourPillars: [Pillar, Pillar, Pillar, Pillar | undefined]
-    private mustPillars: Pillar[]
+    private fourPillars: [PillarC, PillarC, PillarC, PillarC | undefined]
+    private mustPillars: PillarC[]
     private sex: Sex
 
     constructor(
         public bazi: BaziInput,
     ) {
         this.sex = bazi.sex
-        this.fourPillars = [this.bazi.year, this.bazi.month, this.bazi.day, this.bazi.hour]
-        this.mustPillars = this.fourPillars.filter((p): p is Pillar => !!p)
+        this.fourPillars = [
+            PillarC.fromPillar(this.bazi.year),
+            PillarC.fromPillar(this.bazi.month),
+            PillarC.fromPillar(this.bazi.day),
+            this.bazi.hour ? PillarC.fromPillar(this.bazi.hour) : undefined
+        ]
+        this.mustPillars = this.fourPillars.filter((p): p is PillarC => !!p)
     }
 
     /** 日主天干。 */
@@ -85,32 +80,24 @@ export class Calculator implements ICalculator {
     }
 
     pillars(): DetailedPillar[] {
-        const shensha = computeShensha(this.fourPillars, this.sex)
+        const shensha = computeShensha(
+            [this.bazi.year, this.bazi.month, this.bazi.day, this.bazi.hour],
+            this.sex,
+        )
         const realshensha = [shensha.year, shensha.month, shensha.day, shensha.hour]
         const rizhu = this.bazi.day.gan as Gan
-        return this.fourPillars.filter((p): p is Pillar => !!p).map((p, i): DetailedPillar => {
-            const cangGanShishen = computeShishenZhi(rizhu, p.zhi)
+        const dayGan = GanC.from(rizhu)
+        return this.fourPillars.filter((p): p is PillarC => !!p).map((p, i): DetailedPillar => {
             return {
                 label: PILLAR_LABELS[i]!,
                 gan: {
                     name: p.gan,
-                    shishen: computeShishenGan(rizhu, p.gan),
-                    wuxing: ganWuxing(p.gan)
+                    isRizhu: i === 2,
                 },
-                zhi: {
-                    name: p.zhi,
-                    wuxing: zhiWuxing(p.zhi),
-                    cangGan: CANG_GAN[p.zhi].map((g, idx) => {
-                        return {
-                            name: g,
-                            shishen: cangGanShishen[idx]!,
-                            wuxing: computeShishenWuxing(rizhu, cangGanShishen[idx]!)
-                        }
-                    }),
-                },
+                zhi: p.zhi,
                 nayin: nayinNameOf(p.gan, p.zhi),
                 shensha: realshensha[i] ? realshensha[i]! : [],
-                changsheng: changshengState(p.gan, p.zhi),
+                changsheng: changshengState(dayGan.str, p.zhi.str),
             }
         })
     }
@@ -142,51 +129,51 @@ export class Calculator implements ICalculator {
     }
 
     /** 透出的五行列表 (按柱序, 去重). */
-    touWx(): WuXing[]
+    touWx(): WuXingC[]
     /** 指定五行是否透 + 透的柱索引. */
-    touWx(wx: WuXing): [boolean, number[]]
-    touWx(wx?: WuXing): WuXing[] | [boolean, number[]] {
+    touWx(wx: WuXingC): [boolean, number[]]
+    touWx(wx?: WuXingC): WuXingC[] | [boolean, number[]] {
         if (wx === undefined) {
-            const seen = new Set<WuXing>()
-            const out: WuXing[] = []
+            const seen = new Set<WuXingC>()
+            const out: WuXingC[] = []
             this.touSlots().forEach((i) => {
-                const w = ganWuxing(this.fourPillars[i]!.gan)
+                const w = WuXingC.from(GAN_WUXING[this.fourPillars[i]!.gan.str])
                 if (!seen.has(w)) { seen.add(w); out.push(w) }
             })
             return out
         }
-        const slots = this.touSlots().filter((i) => ganWuxing(this.fourPillars[i]!.gan) === wx)
+        const slots = this.touSlots().filter((i) => GAN_WUXING[this.fourPillars[i]!.gan.str] === wx.str)
         return [slots.length > 0, slots]
     }
 
     /** 地支藏干含此天干的柱索引 (有根). */
-    private rootSlotsOfGan(gan: Gan): number[] {
+    private rootSlotsOfGan(gan: GanC): number[] {
         const out: number[] = []
         this.mustPillars.forEach((p, i) => {
-            if (CANG_GAN[p.zhi].includes(gan)) out.push(i)
+            if (p.zhi.canggan().includes(gan)) out.push(i)
         })
         return out
     }
 
     /** 地支藏干含此五行的柱索引 (有根). */
-    private rootSlotsOfWx(wx: WuXing): number[] {
+    private rootSlotsOfWx(wx: WuXingC): number[] {
         const out: number[] = []
         this.mustPillars.forEach((p, i) => {
-            if (CANG_GAN[p.zhi].some((g) => ganWuxing(g) === wx)) out.push(i)
+            if (p.zhi.canggan().some((g) => GAN_WUXING[g.str] === wx.str)) out.push(i)
         })
         return out
     }
 
     /** 有根的天干列表 (藏干含之, 去重). */
-    rootGan(): Gan[]
+    rootGan(): GanC[]
     /** 指定天干是否有根 + 根的柱索引. */
-    rootGan(gan: Gan): [boolean, number[]]
-    rootGan(gan?: Gan): Gan[] | [boolean, number[]] {
+    rootGan(gan: GanC): [boolean, number[]]
+    rootGan(gan?: GanC): GanC[] | [boolean, number[]] {
         if (gan === undefined) {
-            const seen = new Set<Gan>()
-            const out: Gan[] = []
+            const seen = new Set<GanC>()
+            const out: GanC[] = []
             this.mustPillars.forEach((p) => {
-                CANG_GAN[p.zhi].forEach((g) => {
+                p.zhi.canggan().forEach((g) => {
                     if (!seen.has(g)) { seen.add(g); out.push(g) }
                 })
             })
@@ -197,16 +184,16 @@ export class Calculator implements ICalculator {
     }
 
     /** 有根的五行列表 (藏干含之, 去重). */
-    rootWx(): WuXing[]
+    rootWx(): WuXingC[]
     /** 指定五行是否有根 + 根的柱索引. */
-    rootWx(wx: WuXing): [boolean, number[]]
-    rootWx(wx?: WuXing): WuXing[] | [boolean, number[]] {
+    rootWx(wx: WuXingC): [boolean, number[]]
+    rootWx(wx?: WuXingC): WuXingC[] | [boolean, number[]] {
         if (wx === undefined) {
-            const seen = new Set<WuXing>()
-            const out: WuXing[] = []
+            const seen = new Set<WuXingC>()
+            const out: WuXingC[] = []
             this.mustPillars.forEach((p) => {
-                CANG_GAN[p.zhi].forEach((g) => {
-                    const w = ganWuxing(g)
+                p.zhi.canggan().forEach((g) => {
+                    const w = WuXingC.from(GAN_WUXING[g.str])
                     if (!seen.has(w)) { seen.add(w); out.push(w) }
                 })
             })
@@ -217,23 +204,23 @@ export class Calculator implements ICalculator {
     }
 
     /** 天干五行计数。 */
-    ganWxCount(wx: WuXing): number {
-        return this.mustPillars.filter((p) => ganWuxing(p.gan) === wx).length
+    ganWxCount(wx: WuXingC): number {
+        return this.mustPillars.filter((p) => GAN_WUXING[p.gan.str] === wx.str).length
     }
     /** 地支本气五行计数。 */
-    zhiMainWxCount(wx: WuXing): number {
+    zhiMainWxCount(wx: WuXingC): number {
         return this.mustPillars.filter((p) => {
-            const g = CANG_GAN[p.zhi][0]
-            return !!g && ganWuxing(g) === wx
+            const g = p.zhi.canggan()[0]
+            return !!g && GAN_WUXING[g.str] === wx.str
         }).length
     }
 
     /** 本气或中气含此五行。 */
-    rootExt(wx: WuXing): boolean {
-        return this.pillars().some((p) => {
-            const b = p.zhi.cangGan[0]?.name
-            const m = p.zhi.cangGan[1]?.name
-            return (!!b && ganWuxing(b) === wx) || (!!m && ganWuxing(m) === wx)
+    rootExt(wx: WuXingC): boolean {
+        return this.mustPillars.some((p) => {
+            const b = p.zhi.canggan()[0]
+            const m = p.zhi.canggan()[1]
+            return (!!b && GAN_WUXING[b.str] === wx.str) || (!!m && GAN_WUXING[m.str] === wx.str)
         })
     }
 }
@@ -244,41 +231,49 @@ export class ShishenCalculator implements IShishenCalculator {
     ) { }
 
     private pillars(): DetailedPillar[] { return this.calculator.pillars() }
+    private get dayGan(): GanC { return GanC.from(this.calculator.dayGan) }
+    private ganShishen(p: DetailedPillar): ShishenC | undefined {
+        return p.gan.isRizhu ? undefined : shishenOf(this.dayGan, p.gan.name)
+    }
+    private zhiShishen(p: DetailedPillar): ShishenC[] {
+        return p.zhi.canggan().map((gan) => shishenOf(this.dayGan, gan))
+    }
 
     // ———————————————————————————————————————————————
     // 透 (年/月/时天干, 排除日主) / 藏 (地支藏干) / 有 (透∪藏)
     // ———————————————————————————————————————————————
 
     /** 透出的十神列表 (去重). */
-    tou(): Shishen[]
+    tou(): ShishenC[]
     /** 指定十神是否透 + 透的柱索引 (年/月/时). */
-    tou(ss: Shishen): [boolean, number[]]
-    tou(ss?: Shishen): Shishen[] | [boolean, number[]] {
+    tou(ss: ShishenC): [boolean, number[]]
+    tou(ss?: ShishenC): ShishenC[] | [boolean, number[]] {
         const slots: number[] = []
-        const seen = new Set<Shishen>()
+        const seen = new Set<ShishenC>()
         this.pillars().forEach((p, i) => {
-            if (i !== 2 && p.gan.shishen !== "日主") {
+            const value = this.ganShishen(p)
+            if (value) {
                 slots.push(i)
-                seen.add(p.gan.shishen as Shishen)
+                seen.add(value)
             }
         })
         if (ss === undefined) return [...seen]
-        const hit = slots.filter((i) => this.pillars()[i]!.gan.shishen === ss)
+        const hit = slots.filter((i) => this.ganShishen(this.pillars()[i]!) === ss)
         return [hit.length > 0, hit]
     }
 
     /** 藏于地支的十神列表 (去重). */
-    zang(): Shishen[]
+    zang(): ShishenC[]
     /** 指定十神是否藏 + 藏的柱索引. */
-    zang(ss: Shishen): [boolean, number[]]
-    zang(ss?: Shishen): Shishen[] | [boolean, number[]] {
-        const seen = new Set<Shishen>()
+    zang(ss: ShishenC): [boolean, number[]]
+    zang(ss?: ShishenC): ShishenC[] | [boolean, number[]] {
+        const seen = new Set<ShishenC>()
         const hitSlots: number[] = []
         this.pillars().forEach((p, i) => {
             let any = false
-            p.zhi.cangGan.forEach((g) => {
-                seen.add(g.shishen)
-                if (g.shishen === ss) any = true
+            this.zhiShishen(p).forEach((value) => {
+                seen.add(value)
+                if (value === ss) any = true
             })
             if (ss !== undefined && any) hitSlots.push(i)
         })
@@ -287,18 +282,18 @@ export class ShishenCalculator implements IShishenCalculator {
     }
 
     /** 透或藏的十神列表 (去重). */
-    has(): Shishen[]
+    has(): ShishenC[]
     /** 指定十神是否有 (透∪藏) + 有的柱索引. */
-    has(ss: Shishen): [boolean, number[]]
-    has(ss?: Shishen): Shishen[] | [boolean, number[]] {
+    has(ss: ShishenC): [boolean, number[]]
+    has(ss?: ShishenC): ShishenC[] | [boolean, number[]] {
         const touSet = new Set(this.tou())
         const zangSet = new Set(this.zang())
-        const union = new Set<Shishen>([...touSet, ...zangSet])
+        const union = new Set<ShishenC>([...touSet, ...zangSet])
         if (ss === undefined) return [...union]
         const slots = new Set<number>()
         this.pillars().forEach((p, i) => {
-            if (i !== 2 && p.gan.shishen === ss) slots.add(i)
-            if (p.zhi.cangGan.some((g) => g.shishen === ss)) slots.add(i)
+            if (this.ganShishen(p) === ss) slots.add(i)
+            if (this.zhiShishen(p).includes(ss)) slots.add(i)
         })
         const arr = [...slots].sort((a, b) => a - b)
         return [arr.length > 0, arr]
@@ -307,53 +302,52 @@ export class ShishenCalculator implements IShishenCalculator {
     /** 各十神出现次数 (透 + 藏). */
     count(): Record<Shishen, number>
     /** 指定十神出现次数. */
-    count(ss: Shishen): number
-    count(ss?: Shishen): Record<Shishen, number> | number {
+    count(ss: ShishenC): number
+    count(ss?: ShishenC): Record<Shishen, number> | number {
         const rec = this.countAll()
         if (ss === undefined) return rec
-        return rec[ss]
+        return rec[ss.str]
     }
 
     /** 各类别十神出现次数. */
     countCat(): Record<ShishenCat, number>
     /** 指定类别十神出现次数. */
-    countCat(c: ShishenCat): number
-    countCat(c?: ShishenCat): Record<ShishenCat, number> | number {
+    countCat(c: ShishenCC): number
+    countCat(c?: ShishenCC): Record<ShishenCat, number> | number {
         const rec = this.countAllCat()
         if (c === undefined) return rec
-        return rec[c]
+        return rec[c.str]
     }
 
     /** 有力的十神列表 (透或藏). */
-    strong(): Shishen[]
+    strong(): ShishenC[]
     /** 指定十神是否有力 (透或藏). */
-    strong(ss: Shishen): boolean
-    strong(ss?: Shishen): Shishen[] | boolean {
+    strong(ss: ShishenC): boolean
+    strong(ss?: ShishenC): ShishenC[] | boolean {
         if (ss === undefined) return this.has()
         const [t] = this.has(ss)
         return t
     }
 
     /** 有力的十神类别列表. */
-    strongCat(): ShishenCat[]
+    strongCat(): ShishenCC[]
     /** 指定类别是否有力. */
-    strongCat(c: ShishenCat): boolean
-    strongCat(c?: ShishenCat): ShishenCat[] | boolean {
-        const cats: ShishenCat[] = ["比劫", "印", "食伤", "财", "官杀"]
+    strongCat(c: ShishenCC): boolean
+    strongCat(c?: ShishenCC): ShishenCC[] | boolean {
+        const cats = Object.values(ShishenCC.map)
         if (c === undefined) return cats.filter((cat) => this.strongCat(cat))
         return this.pillars().some((p, i) => {
-            if (i !== 2 && p.gan.shishen !== "日主"
-                && SHI_SHEN_CAT[p.gan.shishen as Shishen] === c) return true
-            return p.zhi.cangGan.some((g) => SHI_SHEN_CAT[g.shishen] === c)
+            if (this.ganShishen(p)?.cat === c) return true
+            return this.zhiShishen(p).some((value) => value.cat === c)
         })
     }
 
     /** 两个十神是否在相邻柱天干紧贴 (差 1, 仅年/月/时). */
-    adjacentTou(ss1: Shishen, ss2: Shishen): boolean {
-        const posOf = (s: Shishen): number[] => {
+    adjacentTou(ss1: ShishenC, ss2: ShishenC): boolean {
+        const posOf = (s: ShishenC): number[] => {
             const out: number[] = []
             this.pillars().forEach((p, i) => {
-                if (i !== 2 && p.gan.shishen === s) out.push(i)
+                if (this.ganShishen(p) === s) out.push(i)
             })
             return out
         }
@@ -370,12 +364,10 @@ export class ShishenCalculator implements IShishenCalculator {
     private countAll(): Record<Shishen, number> {
         const rec = {} as Record<Shishen, number>
         this.pillars().forEach((p) => {
-            if (p.gan.shishen !== "日主") {
-                const s = p.gan.shishen as Shishen
-                rec[s] = (rec[s] ?? 0) + 1
-            }
-            p.zhi.cangGan.forEach((g) => {
-                rec[g.shishen] = (rec[g.shishen] ?? 0) + 1
+            const gan = this.ganShishen(p)
+            if (gan) rec[gan.str] = (rec[gan.str] ?? 0) + 1
+            this.zhiShishen(p).forEach((value) => {
+                rec[value.str] = (rec[value.str] ?? 0) + 1
             })
         })
         return rec
@@ -384,8 +376,9 @@ export class ShishenCalculator implements IShishenCalculator {
     private countAllCat(): Record<ShishenCat, number> {
         const rec: Record<ShishenCat, number> = { 比劫: 0, 印: 0, 食伤: 0, 财: 0, 官杀: 0 }
         this.pillars().forEach((p) => {
-            if (p.gan.shishen !== "日主") rec[SHI_SHEN_CAT[p.gan.shishen as Shishen]]++
-            p.zhi.cangGan.forEach((g) => rec[SHI_SHEN_CAT[g.shishen]]++)
+            const gan = this.ganShishen(p)
+            if (gan) rec[gan.cat.str]++
+            this.zhiShishen(p).forEach((value) => rec[value.cat.str]++)
         })
         return rec
     }

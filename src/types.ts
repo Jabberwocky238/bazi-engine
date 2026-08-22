@@ -382,5 +382,18 @@ export class PillarC {
         public readonly gan: GanC,
         public readonly zhi: ZhiC,
     ) { }
+    
+    static from(gan: Gan, zhi: Zhi): PillarC;
+static from(gan: GanC, zhi: ZhiC): PillarC;
+    static from(gan: GanC | Gan, zhi: ZhiC | Zhi): PillarC {
+        if (typeof gan === "string" && typeof zhi === "string") {
+            return new PillarC(GanC.from(gan), ZhiC.from(zhi))
+        }
+
+        return new PillarC(gan as GanC, zhi as ZhiC)
+    }
+    static fromPillar(pillar: Pillar): PillarC {
+        return PillarC.from(pillar.gan as Gan, pillar.zhi as Zhi)
+    }
 }
 
