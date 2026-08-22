@@ -22,7 +22,19 @@ type KeyedTensor<Value, Keys extends readonly (readonly PropertyKey[])[]> = Keys
 
 type TensorLeaf<T> = T extends readonly (infer Item)[] ? TensorLeaf<Item> : T;
 
+type BitListT<Items extends readonly unknown[], Length extends number> = readonly (Items[number] | undefined)[] & { readonly length: Length };
+
+class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
+  public constructor(public readonly items: Items, public readonly length: BitLength) {
+    if (!Number.isInteger(length) || length < 0 || length > 31 || items.length > 2 ** length) throw new RangeError("Invalid bit length");
+  }
+  public decode(mask: number): BitListT<Items, Items["length"]> {
+    return Array.from({ length: this.items.length }, (_, bit) => (mask & (1 << bit)) !== 0 ? this.items[bit] : undefined) as unknown as BitListT<Items, Items["length"]>;
+  }
+}
+
 function createTable<
+  I,
   T,
   Keys extends readonly (readonly PropertyKey[])[],
 >(table: T, ...keyLists: Keys): KeyedTensor<TensorLeaf<T>, Keys> {
@@ -33,17 +45,6 @@ function createTable<
     return Object.fromEntries(keys.map((key, index) => [key, build(source[index], depth + 1)]));
   };
   return build(table, 0) as KeyedTensor<TensorLeaf<T>, Keys>;
-}
-
-type BitListT<Items extends readonly unknown[], Length extends number> = readonly (Items[number] | undefined)[] & { readonly length: Length };
-
-class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
-  public constructor(public readonly items: Items, public readonly length: BitLength) {
-    if (!Number.isInteger(length) || length < 0 || length > 31 || items.length > 2 ** length) throw new RangeError("Invalid bit length");
-  }
-  public decode(mask: number): BitListT<Items, Items["length"]> {
-    return Array.from({ length: this.items.length }, (_, bit) => (mask & (1 << bit)) !== 0 ? this.items[bit] : undefined) as unknown as BitListT<Items, Items["length"]>;
-  }
 }
 
 function createBitList<const Items extends readonly PropertyKey[], const Length extends number>(items: Items, length: Length): BitList<Items, Length> {

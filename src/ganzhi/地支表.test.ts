@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
-import { ZHI } from "../src/types.ts";
-import { DI_ZHI_RELATION_TABLE_WRAPPER as table } from "../src/ganzhi/地支.ts";
+import { ZHI } from "../types.ts";
+import { DI_ZHI_RELATION_TABLE_WRAPPER as table } from "./地支.ts";
 
 const pairs = (values: readonly string[]) => new Set(values.flatMap((pair) => [pair, [...pair].reverse().join("")]));
 const liuhe = pairs(["子丑", "寅亥", "卯戌", "辰酉", "巳申", "午未"]);

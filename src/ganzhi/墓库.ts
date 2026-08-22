@@ -61,24 +61,19 @@ export const MUKU_QI_TABLE = [
   [null, null, null, null, "中气", null, null, "余气", null, null, null, null],
   [null, null, null, null, null, null, null, null, null, null, null, null],
   [null, null, null, null, null, null, null, "中气", null, null, "余气", null],
-  ["本气", null, null, null, "本气", null, null, null, null, null, "本气", null],
-  [null, null, null, null, null, null, null, "本气", null, null, null, "本气"],
+  [null, null, null, null, "本气", null, null, null, null, null, "本气", null],
+  [null, "本气", null, null, null, null, null, "本气", null, null, null, null],
   [null, null, null, null, null, null, null, null, null, null, null, null],
+  [null, "余气", null, null, null, null, null, null, null, null, "中气", null],
   [null, null, null, null, null, null, null, null, null, null, null, null],
-  [null, null, null, null, null, null, null, null, null, null, null, "中气"],
-  [null, "余气", null, null, null, null, null, null, null, null, null, null],
+  [null, "中气", null, null, "余气", null, null, null, null, null, null, null],
 ] as const satisfies Table<MuKuQi, [10, 12]>;
 
-export const MUKU_TABLE_WRAPPER = createTable(
-  MUKU_QI_TABLE,
-  GAN,
-  ZHI,
-);
+export const MUKU_TABLE_WRAPPER = createTable(MUKU_QI_TABLE,GAN,ZHI);
 
 export interface MuKuFinding {
   kind: "墓库";
   name: string;                 // "辰 · 水库"
-  positions: string;            // "年"
   slots: readonly [number];
   state: MuKuState;
   /** 库支. */
@@ -167,7 +162,6 @@ function detect(pillars: Pillar[], extras: ExtraPillar[] = []): MuKuFinding[] {
     const f: MuKuFinding = {
       kind: "墓库",
       name: `${zhi} · ${ku.name}`,
-      positions: POS_NAMES[idx]!,
       slots: [idx],
       state,
       zhi,

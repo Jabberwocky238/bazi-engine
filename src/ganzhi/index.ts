@@ -25,7 +25,6 @@ import type { ExtraPillar } from "./common.ts";
 export * from "./common.ts";
 export * from "./天干.ts";
 export * from "./地支.ts";
-export * from "../bitmap.ts";
 
 // --- 天干 ---------------------------------------------------------------
 import { 天干五合, type TianGanWuHeFinding, type WuHeFinding } from "./天干五合.ts";
@@ -44,7 +43,7 @@ import { 地支相害, type HaiFinding } from "./地支相害.ts";
 import { 墓库, type MuKuFinding } from "./墓库.ts";
 
 // --- 整柱 ---------------------------------------------------------------
-import { detect as detectWholePillar, type WholePillarFinding } from "./盖头截脚覆载.ts";
+import { detect as detectWholePillar } from "./盖头截脚覆载.ts";
 
 export interface GanZhiAnalysis {
   // 合类 (含五合子态 争合/妒合)
@@ -62,8 +61,6 @@ export interface GanZhiAnalysis {
   地支相害: HaiFinding[];
   // 墓库
   墓库: MuKuFinding[];
-  // 整柱
-  盖头截脚覆载: [WholePillarFinding?, WholePillarFinding?, WholePillarFinding?, WholePillarFinding?];
 }
 
 export function analyzeGanZhi(
@@ -84,12 +81,6 @@ export function analyzeGanZhi(
     地支相破: 地支相破.detect(pillars, extras),
     地支相害: 地支相害.detect(pillars, extras),
     墓库: 墓库.detect(pillars, extras),
-    盖头截脚覆载: [
-      detectWholePillar(pillars[0] as Pillar, 0),
-      detectWholePillar(pillars[1] as Pillar, 1),
-      detectWholePillar(pillars[2] as Pillar, 2),
-      detectWholePillar(pillars[3] as Pillar, 3),
-    ],
   };
 }
 

@@ -49,11 +49,7 @@ const GTJJ_TABLE = [
   ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
 ] as const satisfies Table<WholePillarR, [10, 12]>;
 
-export const GTJJ_TABLE_WRAPPER = createTable(
-  GTJJ_TABLE,
-  GAN,
-  ZHI,
-);
+export const GTJJ_TABLE_WRAPPER = createTable(GTJJ_TABLE,GAN,ZHI);
 
 export function detect(pillar: Pillar): WholePillarR {
   return GTJJ_TABLE_WRAPPER[pillar.gan][pillar.zhi]
