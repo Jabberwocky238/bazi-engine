@@ -25,7 +25,7 @@ type TensorLeaf<T> = T extends readonly (infer Item)[] ? TensorLeaf<Item> : T;
 function createTable<
   T,
   Keys extends readonly (readonly PropertyKey[])[],
->(table: T, ...keyLists: Keys): KeyedTensor<T extends readonly unknown[] ? T[number] : T, Keys> {
+>(table: T, ...keyLists: Keys): KeyedTensor<TensorLeaf<T>, Keys> {
   const build = (value: unknown, depth: number): unknown => {
     if (depth === keyLists.length) return value;
     const keys = keyLists[depth]!;

@@ -31,82 +31,11 @@
  * 通过 sub 区分. 一柱内紧贴作用 —— close 恒为 true.
  */
 import { createTable, type Table } from "@/tables.ts";
-import type { Gan, Pillar, WuXing, Zhi } from "../types.ts";
-import { CONTROLS, GENERATES } from "../wuxing.ts";
+import { GAN, ZHI, type Gan, type Pillar, type WuXing, type Zhi } from "@/types.ts";
 import { ganWuxing, zhiWuxing, POS_NAMES } from "./common.ts";
 
-// ———————————————————————————————————————————————
-// 结构化类型 — detect 返回 GaiTouJieJiaoFuZaiFinding | undefined
-// ———————————————————————————————————————————————
-// 整柱类 (盖头/截脚/覆载), 一柱内天干地支作用, 紧贴恒真.
-// 判别信息: 干支 / 双方五行 / 子类别 (覆载: 同气/得覆/得载).
-// 旧版把覆载子态压进 name + note.
-
 /** 覆载子态. */
-export type FuZaiSub = "同气" | "得覆" | "得载";
-
-/** 整柱共有字段. */
-export interface WholePillarBase {
-  /** 柱位 (0=年 1=月 2=日 3=时). */
-  slot: number;
-  positions: string;
-  /** 天干. */
-  gan: Gan;
-  /** 地支. */
-  zhi: Zhi;
-  /** 天干五行. */
-  ganWx: WuXing;
-  /** 地支五行. */
-  zhiWx: WuXing;
-}
-
-/** 盖头 — 天干克地支. */
-export interface GaiTouFinding extends WholePillarBase {
-  kind: "盖头";
-}
-
-/** 截脚 — 地支克天干. */
-export interface JieJiaoFinding extends WholePillarBase {
-  kind: "截脚";
-}
-
-/** 覆载 — 干支相生/同气. */
-export interface FuZaiFinding extends WholePillarBase {
-  kind: "覆载";
-  sub: FuZaiSub;
-}
-
-export type WholePillarFinding = GaiTouFinding | JieJiaoFinding | FuZaiFinding;
-
-function classify(gw: WuXing, zw: WuXing): FuZaiSub | null {
-  if (gw === zw) return "同气";
-  if (GENERATES[gw] === zw) return "得覆";
-  if (GENERATES[zw] === gw) return "得载";
-  return null;
-}
-
-function detect(pillar: Pillar, slot: number): WholePillarFinding | undefined {
-  const gw = ganWuxing(pillar.gan);
-  const zw = zhiWuxing(pillar.zhi);
-  const base = {
-    slot,
-    positions: POS_NAMES[slot]!,
-    gan: pillar.gan,
-    zhi: pillar.zhi,
-    ganWx: gw,
-    zhiWx: zw,
-  };
-  const st = classify(gw, zw);
-  if (st) return { ...base, kind: "覆载", sub: st };
-  if (CONTROLS[zw] === gw) return { ...base, kind: "截脚" };
-  if (CONTROLS[gw] === zw) return { ...base, kind: "盖头" };
-  return undefined;
-}
-
-export { detect };
-
-export type WholePillarTableEntry = "盖头" | "截脚" | "同气" | "得覆" | "得载";
-export type GaiTouJieJiaoFuZaiTable = RawTable<WholePillarTableEntry>;
+export type WholePillarR = "同气" | "得覆" | "得载" | "盖头" | "截脚";
 
 const GTJJ_TABLE = [
   ["得载", "盖头", "同气", "同气", "盖头", "得覆", "得覆", "盖头", "截脚", "截脚", "盖头", "得载"],
@@ -119,10 +48,17 @@ const GTJJ_TABLE = [
   ["得覆", "得载", "盖头", "盖头", "得载", "截脚", "截脚", "得载", "同气", "同气", "得载", "得覆"],
   ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
   ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
-] as const satisfies Table<WholePillarTableEntry, [10, 12]>;
+] as const satisfies Table<WholePillarR, [10, 12]>;
 
 export const GTJJ_TABLE_WRAPPER = createTable(
   GTJJ_TABLE,
   GAN,
   ZHI,
 );
+
+export function detect(pillar: Pillar): WholePillarR {
+  return GTJJ_TABLE_WRAPPER[pillar.gan][pillar.zhi]
+}
+
+
+
