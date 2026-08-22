@@ -9,10 +9,10 @@
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
@@ -29,13 +29,14 @@
     "shensha": "bun run test/cli-shensha.ts",
     "ganzhi": "bun run test/cli-ganzhi.ts",
     "clean": "rm -rf dist",
-    "build": "mkdir -p dist && bun build ./src/index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json"
+    "build": "mkdir -p dist && bun build ./src/index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json && npx dts-bundle-generator -o dist/index.d.ts src/index.ts"
   },
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "dts-bundle-generator": "9.5.1"
   },
   "peerDependencies": {
     "typescript": "^5"
