@@ -1,6 +1,10 @@
 /** 盖头、截脚、覆载静态二维表。行按天干，列按地支。 */
 export type Table<Item> = readonly (readonly Item[])[];
-export type TypeOfTable<Item, Column extends number, Row extends number> = Table<Item>[Row][Column];
+export type TypeOfTable<
+  T extends readonly (readonly unknown[])[],
+  Column extends number,
+  Row extends number,
+> = T[Row][Column];
 export type WholePillarTableEntry = "盖头" | "截脚" | "同气" | "得覆" | "得载";
 export type GaiTouJieJiaoFuZaiTable = Table<WholePillarTableEntry>;
 
@@ -16,3 +20,5 @@ export const GAI_TOU_JIE_JIAO_FU_ZAI_TABLE = [
   ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
   ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
 ] as const satisfies GaiTouJieJiaoFuZaiTable;
+
+export type JiaZiEntry = TypeOfTable<typeof GAI_TOU_JIE_JIAO_FU_ZAI_TABLE, 0, 0>;
