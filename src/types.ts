@@ -16,7 +16,7 @@ export type Gan = typeof GAN[number]
 export const ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"] as const;
 export type Zhi = typeof ZHI[number]
 export type Muku = Extract<Zhi, "辰" | "未" | "戌" | "丑">;
-export type Pillar = { gan: Gan, zhi: Gan }
+export type Pillar = { gan: Gan, zhi: Zhi }
 export type TriadKey = "申子辰" | "寅午戌" | "亥卯未" | "巳酉丑";
 export type Season = "春" | "夏" | "秋" | "冬";
 /** sex: 1 = 男, 0 = 女. 性别相关神煞 (如 元辰) 必填. */

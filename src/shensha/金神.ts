@@ -3,7 +3,7 @@
  *   日柱为此三日之一 → 日柱金神.
  *   时柱为此三日之一 且 日干 ∈ {甲,己} → 时柱金神.
  */
-import type { GanZhi } from "../types.ts";
+import type { GanZhi } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const JIN_SHEN_GANZHI: readonly GanZhi[] = ["乙丑","己巳","癸酉"] as const;

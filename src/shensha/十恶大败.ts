@@ -1,5 +1,5 @@
 /** 十恶大败 (日柱, 本旬禄位落空, 十无禄日). */
-import type { GanZhi } from "../types.ts";
+import type { GanZhi } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const DAYS: readonly GanZhi[] = [

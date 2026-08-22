@@ -1,5 +1,5 @@
 /** 八专日 (日柱, 8 日, 干支同气). */
-import type { GanZhi } from "../types.ts";
+import type { GanZhi } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const DAYS: readonly GanZhi[] = [

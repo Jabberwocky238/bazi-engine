@@ -1,5 +1,5 @@
 /** 九丑日 (日柱, 9 日, 自坐桃花). */
-import type { GanZhi } from "../types.ts";
+import type { GanZhi } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const DAYS: readonly GanZhi[] = [

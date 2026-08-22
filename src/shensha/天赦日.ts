@@ -1,6 +1,6 @@
 /** 天赦日: 春戊寅 / 夏甲午 / 秋戊申 / 冬甲子. */
-import type { GanZhi, Season } from "../types.ts";
-import { seasonOf } from "../season.ts";
+import type { GanZhi, Season } from "./common.ts";
+import { seasonOf } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const DAYS: Readonly<Record<Season, GanZhi>> = {

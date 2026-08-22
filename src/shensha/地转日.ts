@@ -1,6 +1,6 @@
 /** 地转日: 春辛卯 / 夏戊午 / 秋癸酉 / 冬丙子. */
-import type { GanZhi, Season } from "../types.ts";
-import { seasonOf } from "../season.ts";
+import type { GanZhi, Season } from "./common.ts";
+import { seasonOf } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const DAYS: Readonly<Record<Season, GanZhi>> = {

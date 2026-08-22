@@ -2,8 +2,8 @@
  * 正词馆: 柱纳音 = 年纳音五行, 且柱支 = 词馆位 (年纳音临官).
  * 这里表中每种纳音五行对应唯一一组满足条件的干支. 年柱不标.
  */
-import type { GanZhi, NayinWuxing } from "../types.ts";
-import { nayinOf } from "../nayin.ts";
+import type { GanZhi, NayinWuxing } from "./common.ts";
+import { nayinOf } from "./common.ts";
 import { gzOf, pillarAt, type ShenshaCheck } from "./common.ts";
 
 /** 每种年纳音五行对应的正词馆干支. 供 `词馆.ts` 做排除检查. */

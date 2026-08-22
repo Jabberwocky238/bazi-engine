@@ -2,7 +2,8 @@
  * 神煞计算入口. 每个神煞的数据 + 判定封装在同目录下同名文件里;
  * 本文件只负责 (a) 注册表 (b) 批量计算 computeShensha (c) 导出 API.
  */
-import type { Gan, Pillar, Sex, Zhi } from "../types.ts";
+import type { Gan, Sex, Zhi } from "../types.ts";
+import type { Pillar } from "./common.ts";
 import { GAN, ZHI } from "../types.ts";
 import {
   type PillarIndex, type ShenshaCheck, type ShenshaPillars,
@@ -130,7 +131,7 @@ function validate(pillars: ShenshaPillars): void {
  */
 
 export function computeShensha(
-  pillars: readonly [Pillar, Pillar, Pillar, Pillar | undefined],
+  pillars: [Pillar, Pillar, Pillar, Pillar | undefined],
   sex: Sex,
 ): ShenshaResult {
   validate(pillars);

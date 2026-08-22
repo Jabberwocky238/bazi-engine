@@ -2,8 +2,44 @@
  * 神煞判定共享类型与极小工具. 不放任何查表 const —
  * 每个神煞自己的数据在各自的文件里.
  */
-import type { GanZhi, Pillar, Sex, Zhi } from "../types.ts";
-import { ZHI } from "../types.ts";
+import { type Gan, type Sex, type Zhi, type Season, type TriadKey, type WuXing, type Pillar, ZHI } from "../types.ts";
+import { KONGWANG_XUN } from "../types.ts";
+import { LunarUtil } from "lunar-typescript";
+
+export type GanZhi = `${Gan}${Zhi}`;
+export type NayinWuxing = WuXing;
+export type { Gan, Sex, Zhi, Season, TriadKey, WuXing, Pillar };
+
+export function triadOf(z: Zhi): TriadKey {
+  if ("申子辰".includes(z)) return "申子辰";
+  if ("寅午戌".includes(z)) return "寅午戌";
+  if ("亥卯未".includes(z)) return "亥卯未";
+  return "巳酉丑";
+}
+export const TRIAD_MAP: Readonly<Record<TriadKey, Readonly<Record<string, Zhi>>>> = {
+  "申子辰": { 桃花:"酉", 将星:"子", 华盖:"辰", 驿马:"寅", 劫煞:"巳", 灾煞:"午", 亡神:"亥" },
+  "寅午戌": { 桃花:"卯", 将星:"午", 华盖:"戌", 驿马:"申", 劫煞:"亥", 灾煞:"子", 亡神:"巳" },
+  "亥卯未": { 桃花:"子", 将星:"卯", 华盖:"未", 驿马:"巳", 劫煞:"申", 灾煞:"酉", 亡神:"寅" },
+  "巳酉丑": { 桃花:"午", 将星:"酉", 华盖:"丑", 驿马:"亥", 劫煞:"寅", 灾煞:"卯", 亡神:"申" },
+};
+export function seasonOf(z: Zhi): Season {
+  if ("寅卯辰".includes(z)) return "春";
+  if ("巳午未".includes(z)) return "夏";
+  if ("申酉戌".includes(z)) return "秋";
+  if ("亥子丑".includes(z)) return "冬";
+  throw new Error(`invalid month zhi ${z}`);
+}
+export function nayinOf(gan: Gan, zhi: Zhi): NayinWuxing {
+  const name = LunarUtil.NAYIN[`${gan}${zhi}`];
+  if (!name) throw new Error(`invalid ganzhi ${gan}${zhi}`);
+  return name.charAt(name.length - 1) as WuXing;
+}
+export function kongwangFor(gan: Gan, zhi: Zhi): readonly [Zhi, Zhi] {
+  const g = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"].indexOf(gan);
+  const z = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"].indexOf(zhi);
+  for (let n = 0; n < 60; n++) if (n % 10 === g && n % 12 === z) return KONGWANG_XUN[Math.floor(n / 10)]!;
+  throw new Error(`invalid pillar ${gan}${zhi}`);
+}
 
 export type PillarIndex = 0 | 1 | 2 | 3;
 

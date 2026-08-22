@@ -1,6 +1,6 @@
 /** 月德贵人 (月支三合局 → 天干; 四柱天干见之). */
 import type { Gan, TriadKey } from "../types.ts";
-import { triadOf } from "../triad.ts";
+import { triadOf } from "./common.ts";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const YUE_DE: Readonly<Record<TriadKey, Gan>> = {

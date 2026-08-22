@@ -1,4 +1,4 @@
-import { changshengState, GAN_WUXING, type ChangSheng } from "./types";
+import { changshengState, GAN_WUXING, type ChangSheng, type Pillar } from "./types";
 import { PILLAR_LABELS, type PillarType } from "./ganzhi";
 import { nayinNameOf } from "./types";
 import { computeShensha, type Shensha } from "./shensha";
@@ -47,6 +47,7 @@ export interface DetailedPillar {
 }
 
 export class Calculator implements ICalculator {
+    private fourRawPillars: [Pillar, Pillar, Pillar, Pillar | undefined]
     private fourPillars: [PillarC, PillarC, PillarC, PillarC | undefined]
     private mustPillars: PillarC[]
     private sex: Sex
@@ -55,6 +56,12 @@ export class Calculator implements ICalculator {
         public bazi: BaziInput,
     ) {
         this.sex = bazi.sex
+        this.fourRawPillars = [
+            this.bazi.year,
+            this.bazi.month,
+            this.bazi.day,
+            this.bazi.hour
+        ]
         this.fourPillars = [
             PillarC.fromPillar(this.bazi.year),
             PillarC.fromPillar(this.bazi.month),
@@ -81,7 +88,7 @@ export class Calculator implements ICalculator {
 
     pillars(): DetailedPillar[] {
         const shensha = computeShensha(
-            [this.bazi.year, this.bazi.month, this.bazi.day, this.bazi.hour],
+            this.fourRawPillars,
             this.sex,
         )
         const realshensha = [shensha.year, shensha.month, shensha.day, shensha.hour]

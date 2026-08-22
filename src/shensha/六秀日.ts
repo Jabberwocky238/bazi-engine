@@ -1,5 +1,5 @@
 /** 六秀日 (日柱, 6 日). */
-import type { GanZhi } from "../types.ts";
+import type { GanZhi } from "./common.ts";
 import { gzOf, type ShenshaCheck } from "./common.ts";
 
 const DAYS: readonly GanZhi[] = [

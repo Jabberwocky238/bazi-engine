@@ -1,5 +1,5 @@
 /** 地网: 年命纳音为水/土 + 日支辰/巳. 仅标日柱. */
-import { nayinOf } from "../nayin.ts";
+import { nayinOf } from "./common.ts";
 import { type ShenshaCheck } from "./common.ts";
 
 const check: ShenshaCheck = (pillars, i) => {
