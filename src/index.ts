@@ -1,6 +1,5 @@
 export * from "./types.ts";
 export * from "./wuxing.ts";
-export * from "./triad.ts";
 export * from "./nayin.ts";
 export * from "./season.ts";
 export * from "./kongwang.ts";

@@ -5,6 +5,7 @@
  * (五行生克表 / 十神 / 神煞等) 拆入对应模块.
  */
 
+import { createTable, type Table } from "./bitmap.ts";
 export const WUXING = ["木", "火", "土", "金", "水"] as const;
 export type WuXing = typeof WUXING[number]
 export const GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
@@ -21,7 +22,59 @@ export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour?: Pilla
 
 /** 日主与某天干的五行关系 (不分阴阳). */
 export type Relation = "同类" | "我生" | "我克" | "克我" | "生我";
+export const TRIAD_NAMES = [
+    "桃花",
+    "将星",
+    "华盖",
+    "驿马",
+    "劫煞",
+    "灾煞",
+    "亡神",
+] as const;
 
+export type TriadName = typeof TRIAD_NAMES[number];
+
+const TRIAD_KEYS = [
+    "申子辰",
+    "寅午戌",
+    "亥卯未",
+    "巳酉丑",
+] as const;
+
+const TRIAD_TABLE = [
+    ["酉", "子", "辰", "寅", "巳", "午", "亥"],
+    ["卯", "午", "戌", "申", "亥", "子", "巳"],
+    ["子", "卯", "未", "巳", "申", "酉", "寅"],
+    ["午", "酉", "丑", "亥", "寅", "卯", "申"],
+] as const satisfies Table<Zhi, [4, 7]>;
+
+export const TRIAD_TABLE_WRAPPER = createTable(
+    TRIAD_TABLE,
+    TRIAD_KEYS,
+    TRIAD_NAMES,
+);
+export class TriadC {
+    private constructor(public readonly key: TriadKey) { }
+
+    static map = {
+        "申子辰": new TriadC("申子辰"),
+        "寅午戌": new TriadC("寅午戌"),
+        "亥卯未": new TriadC("亥卯未"),
+        "巳酉丑": new TriadC("巳酉丑"),
+    } satisfies Record<TriadKey, TriadC>;
+
+    static from(key: TriadKey): TriadC {
+        return TriadC.map[key];
+    }
+
+    get(name: TriadName): Zhi {
+        return TRIAD_TABLE_WRAPPER[this.key][name];
+    }
+
+    isYearOnly(name: TriadName): boolean {
+        return name === "灾煞";
+    }
+}
 export class SeasonC {
     private constructor(public readonly season: Season) { }
 
@@ -103,9 +156,18 @@ export class ZhiC {
         if ("亥子丑".includes(this.str)) return SeasonC.from("冬");
         throw new Error(`unreachable: seasonOf(${this.str})`);
     }
+    triad(): TriadC {
+        const ret = () => {
+            if ("申子辰".includes(this.str)) return "申子辰";
+            if ("寅午戌".includes(this.str)) return "寅午戌";
+            if ("亥卯未".includes(this.str)) return "亥卯未";
+            return "巳酉丑";
+        }
+        return TriadC.from(ret())
+    }
 }
-export class MukuC  {
-    private constructor(public str: Muku) {  }
+export class MukuC {
+    private constructor(public str: Muku) { }
 
     static readonly map = {
         辰: new MukuC("辰"),
