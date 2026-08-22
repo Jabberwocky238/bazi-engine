@@ -1,31 +1,31 @@
-import { changshengState, type ChangSheng } from "./changsheng";
+import { changshengState, type ChangSheng } from "./types";
 import { ganWuxing, PILLAR_LABELS, zhiWuxing, type PillarType } from "./ganzhi";
-import { nayinNameOf } from "./nayin";
+import { nayinNameOf } from "./types";
 import { computeShensha, type Shensha } from "./shensha";
-import { computeShishenGan, computeShishenZhi, computeShishenWuxing, type Shishen, SHI_SHEN_CAT, type ShishenCat } from "./shishen";
-import type { BaziInput, Gan, Pillar, Sex, WuXing, Zhi } from "./types";
-import { CANG_GAN } from "./wuxing";
+import { computeShishenGan, computeShishenZhi, computeShishenWuxing, type Shishen, SHI_SHEN_CAT, type ShishenCat, ShishenC } from "./shishen";
+import type { BaziInput, Gan, GanC, Pillar, Sex, WuXing, WuXingC, Zhi } from "./types";
+import { CANG_GAN } from "./types";
 
 export interface ICalculator {
-    touGan(): Gan[]
-    touGan(gan: Gan): [boolean, number[]] // 是否透 + 透的柱索引
-    touWx(): WuXing[]
-    touWx(wx: WuXing): [boolean, number[]] // 是否透 + 透的柱索引
-    rootGan(): Gan[] 
-    rootGan(gan: Gan): [boolean, number[]] // 是否有根 + 根的柱索引
-    rootWx(): WuXing[]
-    rootWx(wx: WuXing): [boolean, number[]] // 是否有根 + 根的柱索引
+    touGan(): GanC[]
+    touGan(gan: GanC): [boolean, number[]] // 是否透 + 透的柱索引
+    touWx(): WuXingC[]
+    touWx(wx: WuXingC): [boolean, number[]] // 是否透 + 透的柱索引
+    rootGan(): GanC[] 
+    rootGan(gan: GanC): [boolean, number[]] // 是否有根 + 根的柱索引
+    rootWx(): WuXingC[]
+    rootWx(wx: WuXingC): [boolean, number[]] // 是否有根 + 根的柱索引
 } 
 
 export interface IShishenCalculator {
-    tou(): Shishen[]
-    tou(ss: Shishen): [boolean, number[]] // 是否透 + 透的柱索引
-    zang(): Shishen[]
-    zang(ss: Shishen): [boolean, number[]] // 是否藏 + 藏的柱索引
-    has(): Shishen[]
-    has(ss: Shishen): [boolean, number[]] // 是否有 + 有的柱索引
-    count(): Record<Shishen, number>
-    count(ss: Shishen): number
+    tou(): ShishenC[]
+    tou(ss: ShishenC): [boolean, number[]] // 是否透 + 透的柱索引
+    zang(): ShishenC[]
+    zang(ss: ShishenC): [boolean, number[]] // 是否藏 + 藏的柱索引
+    has(): ShishenC[]
+    has(ss: ShishenC): [boolean, number[]] // 是否有 + 有的柱索引
+    count(): Record<ShishenC, number>
+    count(ss: ShishenC): number
     countCat(): Record<ShishenCat, number>
     countCat(c: ShishenCat): number
     strong(): Shishen[]
