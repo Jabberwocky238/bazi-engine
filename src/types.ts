@@ -100,6 +100,111 @@ export const WUXING_BY_RELATION_TABLE = createTable(
     RELATIONS,
     WUXING,
 );
+/** 取干支对应的完整纳音名 (如 甲子 => "海中金"). */
+export function nayinNameOf(gan: GanC, zhi: ZhiC): string {
+    const name = LunarUtil.NAYIN[`${gan.str}${zhi.str}`];
+    if (!name) throw new Error(`invalid ganzhi ${gan.str}${zhi.str}`);
+    return name;
+}
+export function nayinOf(gan: GanC, zhi: ZhiC): WuXingC {
+    const name = nayinNameOf(gan, zhi);
+    const wx = name.charAt(name.length - 1);
+    if (wx !== "金" && wx !== "木" && wx !== "水" && wx !== "火" && wx !== "土") {
+        throw new Error(`unexpected nayin ${name}`);
+    }
+    return WuXingC.from(wx);
+}
+export const KONGWANG_XUN: readonly (readonly [Zhi, Zhi])[] = [
+    ["戌", "亥"], ["申", "酉"], ["午", "未"],
+    ["辰", "巳"], ["寅", "卯"], ["子", "丑"],
+];
+export function kongwangFor(gan: GanC, zhi: ZhiC): readonly [ZhiC, ZhiC] {
+    const g = GAN.indexOf(gan.str), z = ZHI.indexOf(zhi.str);
+    for (let n = 0; n < 60; n++) {
+        if (n % 10 === g && n % 12 === z) {
+            const row = KONGWANG_XUN[Math.floor(n / 10)];
+            if (!row) throw new Error(`kongwang table miss at xun ${Math.floor(n / 10)}`);
+            return [ZhiC.from(row[0]), ZhiC.from(row[1])];
+        }
+    }
+    throw new Error(`invalid pillar ${gan}${zhi}`);
+}
+export const LIFE_STATES = [
+    "长生",
+    "沐浴",
+    "冠带",
+    "临官",
+    "帝旺",
+    "衰",
+    "病",
+    "死",
+    "墓",
+    "绝",
+    "胎",
+    "养",
+] as const;
+export type ChangSheng = typeof LIFE_STATES[number];
+
+/** 十干长生起点 (子平寄生十二宫; 阴干逆行). */
+const CHANGSHENG_START: Record<Gan, { zhi: Zhi; forward: boolean }> = {
+    甲: { zhi: "亥", forward: true },
+    乙: { zhi: "午", forward: false },
+    丙: { zhi: "寅", forward: true },
+    丁: { zhi: "酉", forward: false },
+    戊: { zhi: "寅", forward: true },
+    己: { zhi: "酉", forward: false },
+    庚: { zhi: "巳", forward: true },
+    辛: { zhi: "子", forward: false },
+    壬: { zhi: "申", forward: true },
+    癸: { zhi: "卯", forward: false },
+};
+const CHANGSHENG_TABLE = [
+    //       子       丑       寅       卯       辰       巳       午       未       申       酉       戌       亥
+    ["沐浴", "冠带", "临官", "帝旺", "衰", "病", "死", "墓", "绝", "胎", "养", "长生"], // 甲
+    ["病", "衰", "帝旺", "临官", "冠带", "沐浴", "长生", "养", "胎", "绝", "墓", "死"],   // 乙
+    ["胎", "养", "长生", "沐浴", "冠带", "临官", "帝旺", "衰", "病", "死", "墓", "绝"],   // 丙
+    ["绝", "墓", "死", "病", "衰", "帝旺", "临官", "冠带", "沐浴", "长生", "养", "胎"],   // 丁
+    ["胎", "养", "长生", "沐浴", "冠带", "临官", "帝旺", "衰", "病", "死", "墓", "绝"],   // 戊
+    ["绝", "墓", "死", "病", "衰", "帝旺", "临官", "冠带", "沐浴", "长生", "养", "胎"],   // 己
+    ["死", "墓", "绝", "胎", "养", "长生", "沐浴", "冠带", "临官", "帝旺", "衰", "病"],   // 庚
+    ["长生", "养", "胎", "绝", "墓", "死", "病", "衰", "帝旺", "临官", "冠带", "沐浴"], // 辛
+    ["帝旺", "衰", "病", "死", "墓", "绝", "胎", "养", "长生", "沐浴", "冠带", "临官"], // 壬
+    ["临官", "冠带", "沐浴", "长生", "养", "胎", "绝", "墓", "死", "病", "衰", "帝旺"], // 癸
+] as const satisfies Table<ChangSheng, [10, 12]>;
+
+export const CHANGSHENG_TABLE_WRAPPER = createTable(
+    CHANGSHENG_TABLE,
+    GAN,
+    ZHI,
+);
+
+export function changshengState(gan: Gan, zhi: Zhi): ChangSheng {
+    return CHANGSHENG_TABLE_WRAPPER[gan][zhi];
+}
+
+export function isYueling(dayGan: Gan, monthZhi: Zhi, targetZhi: Zhi): boolean {
+  return changshengState(dayGan, targetZhi) === changshengState(dayGan, monthZhi);
+}
+
+export function isLu(dayGan: Gan, targetZhi: Zhi): boolean {
+  return changshengState(dayGan, targetZhi) === "临官";
+}
+
+export function isRen(dayGan: Gan, targetZhi: Zhi): boolean {
+  return changshengState(dayGan, targetZhi) === "帝旺";
+}
+/** 月令 / 禄位 / 刃: 以月支和日干的十二长生状态推算目标地支. */
+function zhiByChangsheng(dayGan: Gan, state: ChangSheng): Zhi {
+  const zhi = ZHI.find(z => changshengState(dayGan, z) === state);
+  if (!zhi) throw new Error(`unreachable: no ${state} zhi for ${dayGan}`);
+  return zhi;
+}
+
+/** 十干禄位 = 十二长生「临官」位. */
+export function luWeiOf(dayGan: Gan): Zhi { return zhiByChangsheng(dayGan, "临官"); }
+/** 刃位 = 十二长生「帝旺」位. */
+export function renWeiOf(dayGan: Gan): Zhi { return zhiByChangsheng(dayGan, "帝旺"); }
+
 export class TriadC {
     private constructor(public readonly key: TriadKey) { }
 
