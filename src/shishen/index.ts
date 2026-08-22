@@ -77,6 +77,19 @@ export type ShishenResult = {
   藏干生克: Relation[];
 };
 
+/** 计算目标柱相对日主的完整十神结果。 */
+export function computeShishen(day: Pillar, target: Pillar | undefined): ShishenResult {
+  if (!target) throw new Error("target pillar is required");
+  const dayGan = day.gan;
+  const isDayMaster = dayGan === target.gan && day.zhi === target.zhi;
+  const 十神 = isDayMaster ? "日主" : computeShishenGan(dayGan, target.gan);
+  const 藏干 = CANG_GAN[target.zhi];
+  const 藏干十神 = computeShishenZhi(dayGan, target.zhi);
+  const 生克 = isDayMaster ? "同类" : relationOf(dayGan, target.gan);
+  const 藏干生克 = 藏干.map(g => relationOf(dayGan, g));
+  return { 十神, 藏干, 藏干十神, 生克, 藏干生克 };
+}
+
 /**
  * 计算 target 柱对 day 柱 (日主) 的十神视图.
  *   - day:    日主柱 (取其天干为参考, 地支不参与).
