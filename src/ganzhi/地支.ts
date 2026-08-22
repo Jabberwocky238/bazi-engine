@@ -1,5 +1,5 @@
 import { ZHI } from "@/types.ts";
-import { createTable, createBitList, type BitListT, type Table } from "@/bitmap.ts";
+import { createTable, createBitList, type Table } from "@/bitmap.ts";
 
 export type DiZhiRelation = "六合" | "相冲" | "相破" | "相害" | "自刑" | "半刑" | "相刑" | null;
 export const DI_ZHI_RELATION_TABLE = [
