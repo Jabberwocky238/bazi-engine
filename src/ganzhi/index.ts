@@ -23,7 +23,7 @@ import { ZHI } from "../types.ts";
 import type { ExtraPillar } from "./common.ts";
 
 export * from "./common.ts";
-export * from "./tables.ts";
+export * from "../tables.ts";
 
 // --- 天干 ---------------------------------------------------------------
 import { 天干五合, type TianGanWuHeFinding, type WuHeFinding } from "./天干五合.ts";

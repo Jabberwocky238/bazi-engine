@@ -30,6 +30,7 @@
  * 同气最稳、得载次之 (天干坐印)、得覆偏泄 (天干气泄). 皆归同一 kind,
  * 通过 sub 区分. 一柱内紧贴作用 —— close 恒为 true.
  */
+import { createTable, type Table } from "@/tables.ts";
 import type { Gan, Pillar, WuXing, Zhi } from "../types.ts";
 import { CONTROLS, GENERATES } from "../wuxing.ts";
 import { ganWuxing, zhiWuxing, POS_NAMES } from "./common.ts";
@@ -103,3 +104,25 @@ function detect(pillar: Pillar, slot: number): WholePillarFinding | undefined {
 }
 
 export { detect };
+
+export type WholePillarTableEntry = "盖头" | "截脚" | "同气" | "得覆" | "得载";
+export type GaiTouJieJiaoFuZaiTable = RawTable<WholePillarTableEntry>;
+
+const GTJJ_TABLE = [
+  ["得载", "盖头", "同气", "同气", "盖头", "得覆", "得覆", "盖头", "截脚", "截脚", "盖头", "得载"],
+  ["得载", "盖头", "同气", "同气", "盖头", "得覆", "得覆", "盖头", "截脚", "截脚", "盖头", "得载"],
+  ["截脚", "得覆", "得载", "得载", "得覆", "同气", "同气", "得覆", "盖头", "盖头", "得覆", "截脚"],
+  ["截脚", "得覆", "得载", "得载", "得覆", "同气", "同气", "得覆", "盖头", "盖头", "得覆", "截脚"],
+  ["盖头", "同气", "截脚", "截脚", "同气", "得载", "得载", "同气", "得覆", "得覆", "同气", "盖头"],
+  ["盖头", "同气", "截脚", "截脚", "同气", "得载", "得载", "同气", "得覆", "得覆", "同气", "盖头"],
+  ["得覆", "得载", "盖头", "盖头", "得载", "截脚", "截脚", "得载", "同气", "同气", "得载", "得覆"],
+  ["得覆", "得载", "盖头", "盖头", "得载", "截脚", "截脚", "得载", "同气", "同气", "得载", "得覆"],
+  ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
+  ["同气", "截脚", "得覆", "得覆", "截脚", "盖头", "盖头", "截脚", "得载", "得载", "截脚", "同气"],
+] as const satisfies Table<WholePillarTableEntry, [10, 12]>;
+
+export const GTJJ_TABLE_WRAPPER = createTable(
+  GTJJ_TABLE,
+  GAN,
+  ZHI,
+);
