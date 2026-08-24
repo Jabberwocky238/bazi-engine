@@ -29,22 +29,6 @@ export type BaziInput = { year: Pillar; month: Pillar; day: Pillar; hour?: Pilla
 export const CANG_GAN = LunarUtil.ZHI_HIDE_GAN as Record<Zhi, Gan[]>;
 export const GAN_WUXING = LunarUtil.WU_XING_GAN as Record<Gan, WuXing>;
 export const ZHI_WUXING = LunarUtil.WU_XING_ZHI as Record<Zhi, WuXing>;
-/** 五行相生: key 生 value */
-export const GENERATES: Readonly<Record<WuXing, WuXing>> = {
-    木: "火", 火: "土", 土: "金", 金: "水", 水: "木",
-};
-/** 五行相克: key 克 value */
-export const CONTROLS: Readonly<Record<WuXing, WuXing>> = {
-    木: "土", 土: "水", 水: "火", 火: "金", 金: "木",
-};
-/** 反查: value 生 key */
-export const GENERATED_BY: Readonly<Record<WuXing, WuXing>> = {
-    火: "木", 土: "火", 金: "土", 水: "金", 木: "水",
-};
-/** 反查: value 克 key */
-export const CONTROLLED_BY: Readonly<Record<WuXing, WuXing>> = {
-    土: "木", 水: "土", 火: "水", 金: "火", 木: "金",
-};
 /** 日主与某天干的五行关系 (不分阴阳). */
 export type Relation = "同类" | "我生" | "我克" | "克我" | "生我";
 export const TRIAD_NAMES = [
@@ -330,38 +314,6 @@ export class ZhiC {
         return ZHI.indexOf(this.str);
     }
 }
-export class MukuC {
-    public 本气: GanC
-    public 中气: GanC
-    public 余气: GanC
-    public Wx: WuXingC
-
-    private constructor(public str: Muku) { 
-        const MUKU = {
-            辰: { benqi: "戊", zhongqi: "乙", yuqi: "癸", muqi: "癸", muqiWx: "水", name: "水库" },
-            未: { benqi: "己", zhongqi: "丁", yuqi: "乙", muqi: "乙", muqiWx: "木", name: "木库" },
-            戌: { benqi: "戊", zhongqi: "辛", yuqi: "丁", muqi: "丁", muqiWx: "火", name: "火库" },
-            丑: { benqi: "己", zhongqi: "癸", yuqi: "辛", muqi: "辛", muqiWx: "金", name: "金库" },
-        } as const;
-        const muku = MUKU[str]
-        this.Wx = WuXingC.from(muku.muqiWx)
-        this.本气 = GanC.from(muku.benqi)
-        this.中气 = GanC.from(muku.zhongqi)
-        this.余气 = GanC.from(muku.yuqi)
-    }
-
-    static readonly map = {
-        辰: new MukuC("辰"),
-        未: new MukuC("未"),
-        戌: new MukuC("戌"),
-        丑: new MukuC("丑"),
-    } satisfies Record<Muku, MukuC>;
-
-    static from(str: Muku): MukuC {
-        return MukuC.map[str];
-    }
-}
-
 /** 柱位标签 — 四主柱 + 岁运柱. */
 export const PILLAR_LABELS = ['年柱', '月柱', '日柱', '时柱', '大运', '流年', '流月', '流日', '流时'] as const
 export type PillarType = typeof PILLAR_LABELS[number]

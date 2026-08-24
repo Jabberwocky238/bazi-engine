@@ -3,7 +3,7 @@ import {
     analyzeGanZhi, detect as detectWholePillar, pairwiseGan, pairwiseZhi,
     type DiZhiHit, type GanZhiAnalysis, type PairGan, type PairZhi,
     DiZhiDetector, TianGanDetector, 地支解法, 天干解法,
-    mukuAll, mukuShift, mukuTransitions,
+    MukuC, mukuAll, mukuShift,
     type MuKuShift, type MuKuVerdict, type RemedySet,
     type SuiYunHit, type TianGanHit, type WholePillarHit, type WholePillarR, type ZhengHeHit,
 } from "@/ganzhi";
@@ -67,7 +67,10 @@ export interface IGanZhiCalculator {
      * 刑冲破害 给出 dissolvers (引化), 合会 给出 breakers (冲克).
      */
     remedies(extras?: PillarC[]): readonly RemedySet[]
-    /** 原局四墓库的开闭判定 (库不在盘中时 present=false). */
+    /**
+     * 原局四墓库的开闭判定 (库不在盘中时 present=false).
+     * 月支取自原局, 故结果附带墓气与三藏干在月令下的旺衰.
+     */
     muku(extras?: PillarC[]): readonly MuKuVerdict[]
     /** 某岁运柱引起的墓库态变 (开→闭 / 闭→开). */
     mukuShifts(extra: PillarC, extras?: PillarC[]): readonly MuKuShift[]
@@ -503,7 +506,7 @@ export class GanZhiCalculator implements IGanZhiCalculator {
 
 
     muku(extras: PillarC[] = []): readonly MuKuVerdict[] {
-        return mukuAll([...this.originPillars, ...extras])
+        return mukuAll([...this.originPillars, ...extras], this.calculator.bazi.month.zhi)
     }
 
     mukuShifts(extra: PillarC, extras: PillarC[] = []): readonly MuKuShift[] {
@@ -511,7 +514,7 @@ export class GanZhiCalculator implements IGanZhiCalculator {
     }
 
     mukuTransitions(muZhi: Muku, extras: PillarC[] = []): readonly MuKuShift[] {
-        return mukuTransitions([...this.originPillars, ...extras], muZhi)
+        return MukuC.from(muZhi).transitions([...this.originPillars, ...extras])
     }
 
     pairZhi(a: ZhiC, b: ZhiC): PairZhi | null {

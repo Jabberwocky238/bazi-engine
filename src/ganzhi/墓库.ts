@@ -23,9 +23,11 @@
  *
  * 本模块只判定状态; 岁运引起的态变由 mukuShift 给出 (前后两次判定之差).
  */
-import { GAN, ZHI, GANZHI_BITS, GanC, PillarC, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "@/types";
+import { GAN, ZHI, GANZHI_BITS, GanC, PillarC, WuXingC, ZhiC, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "@/types";
+import { BaziEngineError } from "@/error";
+import { wangShuaiOf, type WangShuai } from "./旺衰.ts";
 import { TianGanC } from "./天干.ts";
-import { createTable, createBitList, type Table } from "@/bitmap";
+import { createBitList } from "@/bitmap";
 
 // ———————————————————————————————————————————————
 // 状态类型
@@ -44,7 +46,7 @@ export type MuKuState =
   | "入墓";      // 墓气既不透干也不露支
 
 /** 状态是否为「开」(库中墓气可参与作用). */
-export function isOpenState(state: MuKuState): boolean {
+function isOpenState(state: MuKuState): boolean {
   return state === "自动开库" || state === "强行开库" || state === "开天库";
 }
 
@@ -54,7 +56,7 @@ export function isOpenState(state: MuKuState): boolean {
 // 库只决定标志怎么算 (见 MUKU_RULES), 不影响标志组合如何定状态.
 
 /** 状态标志位 — 每个标志各占 1 bit. */
-export const MUKU_FLAG_BITS = createBitList(
+const MUKU_FLAG_BITS = createBitList(
   [
     "透墓气",     // 墓气透干
     "露墓气",     // 墓气露支 (同五行的支现于盘中)
@@ -88,7 +90,7 @@ const MUKU_STATE_RULES: readonly (readonly [MuKuState, (f: Required<MuKuFlags>) 
 ];
 
 /** 判定状态. */
-export function mukuState(flags: MuKuFlags): MuKuState {
+function mukuState(flags: MuKuFlags): MuKuState {
   const f = Object.fromEntries(
     MUKU_FLAG_BITS.items.map((item) => [item, flags[item] ?? false]),
   ) as Required<MuKuFlags>;
@@ -96,22 +98,6 @@ export function mukuState(flags: MuKuFlags): MuKuState {
   return MUKU_STATE_RULES.find(([, hit]) => hit(f))![0];
 }
 
-/** Ordered treasury table, aligned with MUKU_ZHI_KEYS. */
-export type MuKuQi = "本气" | "中气" | "余气" | null;
-export const MUKU_QI_TABLE = [
-  [null, null, null, null, null, null, null, null, null, null, null, null],
-  [null, null, null, null, "中气", null, null, "余气", null, null, null, null],
-  [null, null, null, null, null, null, null, null, null, null, null, null],
-  [null, null, null, null, null, null, null, "中气", null, null, "余气", null],
-  [null, null, null, null, "本气", null, null, null, null, null, "本气", null],
-  [null, "本气", null, null, null, null, null, "本气", null, null, null, null],
-  [null, null, null, null, null, null, null, null, null, null, null, null],
-  [null, "余气", null, null, null, null, null, null, null, null, "中气", null],
-  [null, null, null, null, null, null, null, null, null, null, null, null],
-  [null, "中气", null, null, "余气", null, null, null, null, null, null, null],
-] as const satisfies Table<MuKuQi, [10, 12]>;
-
-export const MUKU_TABLE_WRAPPER = createTable(MUKU_QI_TABLE,GAN,ZHI);
 
 /** 触发一条标志所需的干支 (全部到位才算命中). */
 type MuKuRule = readonly [flag: MuKuFlag, zhi: Muku, needs: readonly (Gan | Zhi)[]];
@@ -150,7 +136,7 @@ const MUKU_RULE_MASKS: readonly (readonly [MuKuFlag, Muku, number])[] = MUKU_RUL
 );
 
 /** 命盘掩码 → 某库命中的标志集 (墓气相关标志由 mukuVerdict 补齐). */
-export function triggeredFlags(zhi: Muku, mask: GanZhiMask): MuKuFlags {
+function triggeredFlags(zhi: Muku, mask: GanZhiMask): MuKuFlags {
   const flags: MuKuFlags = {};
   for (const [flag, ruleZhi, need] of MUKU_RULE_MASKS) {
     if (ruleZhi === zhi && (mask & need) === need) flags[flag] = true;
@@ -165,15 +151,111 @@ export function triggeredFlags(zhi: Muku, mask: GanZhiMask): MuKuFlags {
 /** 四墓库. */
 export const MUKU_ZHI: readonly Muku[] = ["辰", "未", "戌", "丑"];
 
-/** 库 → 墓气 (余气) 天干. */
-export const MU_QI: Readonly<Record<Muku, Gan>> = {
-  辰: "癸", 未: "乙", 戌: "丁", 丑: "辛",
-};
+/** 藏干在库中的位次, 顺序即 本气 → 中气 → 余气. */
+export type MuKuQiPos = "本气" | "中气" | "余气";
+const MUKU_QI_POS: readonly MuKuQiPos[] = ["本气", "中气", "余气"];
 
-/** 墓气同五行的地支 (露支判定用). */
-const MU_QI_ZHI: Readonly<Record<Muku, readonly Zhi[]>> = {
-  辰: ["子", "亥"], 未: ["卯", "寅"], 戌: ["午", "巳"], 丑: ["酉", "申"],
-};
+/** 四库藏干与所藏五行. md: 墓库总论.md 四库藏干表. */
+const MUKU_META = {
+    辰: { benqi: "戊", zhongqi: "乙", yuqi: "癸", wuxing: "水", name: "水库" },
+    未: { benqi: "己", zhongqi: "丁", yuqi: "乙", wuxing: "木", name: "木库" },
+    戌: { benqi: "戊", zhongqi: "辛", yuqi: "丁", wuxing: "火", name: "火库" },
+    丑: { benqi: "己", zhongqi: "癸", yuqi: "辛", wuxing: "金", name: "金库" },
+} as const satisfies Record<Muku, {
+    benqi: Gan; zhongqi: Gan; yuqi: Gan; wuxing: WuXing; name: string;
+}>;
+
+/**
+ * 墓库 C 类 —— 一个库的固有属性 (与命盘无关).
+ * md: 墓库总论.md 四库藏干表 + 墓气与余气.md
+ *
+ * 藏干三位: 本气 (土) → 中气 (本季余气) → 余气 (即墓气, 三合局旺神的阴干).
+ * 只有墓气是「被封存」的; 本气与中气性质同普通藏干, 可随时与外界作用.
+ */
+export class MukuC {
+    /** 库支本身. */
+    public readonly zhi: ZhiC;
+    /** 本气 —— 库的外壳, 辰戌为戊 (阳土), 丑未为己 (阴土). */
+    public readonly 本气: GanC;
+    /** 中气 —— 本季节五行的阴干. */
+    public readonly 中气: GanC;
+    /** 余气 —— 即墓气 / 墓神, 所藏之气. */
+    public readonly 余气: GanC;
+    /** 墓气的五行, 即本库所藏 (辰=水 未=木 戌=火 丑=金). */
+    public readonly wuxing: WuXingC;
+    /** 库名 ("水库" / "木库" / "火库" / "金库"). */
+    public readonly name: string;
+
+    private constructor(public readonly str: Muku) {
+        const m = MUKU_META[str];
+        this.zhi = ZhiC.from(str)
+        this.本气 = GanC.from(m.benqi);
+        this.中气 = GanC.from(m.zhongqi);
+        this.余气 = GanC.from(m.yuqi);
+        this.wuxing = WuXingC.from(m.wuxing);
+        this.name = m.name;
+    }
+
+    static readonly map = {
+        辰: new MukuC("辰"),
+        未: new MukuC("未"),
+        戌: new MukuC("戌"),
+        丑: new MukuC("丑"),
+    } satisfies Record<Muku, MukuC>;
+
+    /** 由库支取 MukuC; 非四库则抛 BaziEngineError. */
+    static from(str: Muku): MukuC {
+        const ret = MukuC.map[str];
+        if (!ret) throw new BaziEngineError(`invalid muku "${str}"`);
+        return ret;
+    }
+
+    /** 墓气 —— 即余气, 三合局旺神的阴干. */
+    get 墓气(): GanC { return this.余气; }
+
+    /** 三藏干, 按 本气 → 中气 → 余气 顺序. */
+    get 藏干(): readonly GanC[] { return [this.本气, this.中气, this.余气]; }
+
+    /** 墓气在给定月令下的旺衰 —— 决定库中之气是旺是枯. */
+    muQiWangShuai(monthZhi: ZhiC): WangShuai {
+        return wangShuaiOf(this.wuxing, monthZhi.wuxing);
+    }
+
+    /** 墓气同五行的地支 —— 露支判定用 (辰=子亥, 未=卯寅, 戌=午巳, 丑=酉申). */
+    get 露支地支(): readonly ZhiC[] {
+        return ZHI.map((z) => ZhiC.from(z)).filter((z) => z.wuxing === this.wuxing);
+    }
+
+    /** 三藏干各自在给定月令下的旺衰, 按 本气 → 中气 → 余气. */
+    cangGanWangShuai(monthZhi: ZhiC): readonly { gan: GanC; qi: MuKuQiPos; wangShuai: WangShuai }[] {
+        return this.藏干.map((g, i) => ({
+            gan: g,
+            qi: MUKU_QI_POS[i]!,
+            wangShuai: wangShuaiOf(g.wuxing, monthZhi.wuxing),
+        }));
+    }
+
+    /**
+     * 穷举六十甲子, 找出所有能改变本库状态的干支组合.
+     *
+     * 库的「解法」与单条关系不同 —— 它是双向的: 原局闭的可能被冲开,
+     * 原局开的可能被合闭, 故不分 dissolvers/breakers, 一律以态变呈现.
+     */
+    transitions(pillars: readonly PillarC[]): readonly MuKuShift[] {
+        const out: MuKuShift[] = [];
+        for (const g of GAN) {
+            for (const z of ZHI) {
+                if (GAN.indexOf(g) % 2 !== ZHI.indexOf(z) % 2) continue;  // 六十甲子
+                for (const sh of mukuShift(pillars, PillarC.from(g, z, "大运"))) {
+                    if (sh.zhi === this.str) out.push(sh);
+                }
+            }
+        }
+        return out;
+    }
+
+    toString(): string { return `${this.str}(${this.name})`; }
+}
 
 /** 一个库在给定命盘下的判定. */
 export interface MuKuVerdict {
@@ -185,39 +267,60 @@ export interface MuKuVerdict {
   readonly flags: MuKuFlags;
   readonly state: MuKuState;
   readonly open: boolean;
-}
-
-/** 一组柱 → 干支集合掩码. */
-export function mukuMask(pillars: readonly PillarC[]): GanZhiMask {
-  return pillars.reduce((m, p) => m | p.ganzhiMask(), 0);
+  /**
+   * 墓气在月令下的旺衰; 未给月支时为 undefined.
+   * 开库.md: 「提供能量的多少, 需根据月令旺衰 (墓气在月令的旺相休囚死) 判断」.
+   * 出库.md: 未月的辰库水已干涸, 出不出来意义不大; 亥子月的辰库水旺, 出库影响大.
+   */
+  readonly muQiWangShuai?: WangShuai;
+  /**
+   * 三藏干各自的旺衰 (本气 / 中气 / 余气 顺序); 未给月支时为 undefined.
+   * 墓气与余气.md: 「一般是本气 > 中气 > 余气, 但真正决定藏干实际强弱的是月令」.
+   */
+  readonly cangGanWangShuai?: readonly { readonly gan: GanC; readonly qi: MuKuQiPos; readonly wangShuai: WangShuai }[];
 }
 
 /** 判定某库在这组柱下的状态. */
-export function mukuVerdict(zhi: Muku, pillars: readonly PillarC[]): MuKuVerdict {
-  const mask = mukuMask(pillars);
+export function mukuVerdict(
+  zhi: Muku,
+  pillars: readonly PillarC[],
+  monthZhi?: ZhiC,
+): MuKuVerdict {
+  const mask = pillars.reduce((m, p) => m | p.ganzhiMask(), 0);
   const flags: MuKuFlags = { ...triggeredFlags(zhi, mask) };
-  const qi = MU_QI[zhi];
+  const muku = MukuC.from(zhi);
+  const qi = muku.墓气;
 
   // 墓气透干 / 露支.
-  if (pillars.some((p) => p.gan.str === qi)) flags.透墓气 = true;
-  if (pillars.some((p) => (MU_QI_ZHI[zhi] as readonly string[]).includes(p.zhi.str))) {
+  if (pillars.some((p) => p.gan === qi)) flags.透墓气 = true;
+  if (pillars.some((p) => muku.露支地支.includes(p.zhi))) {
     flags.露墓气 = true;
   }
   // 墓气受克: 透出的墓气被天干相克 (逃入库中 -> 自动闭库).
   if (flags.透墓气) {
-    const qiC = GanC.from(qi);
     flags.墓气受克 = pillars.some((p) =>
-      TianGanC.at(p.gan, qiC).some((r) => r.kind === "相克"));
+      TianGanC.at(p.gan, qi).some((r) => r.kind === "相克"));
   }
   const count = pillars.filter((p) => p.zhi.str === zhi).length;
 
   const state = mukuState(flags);
-  return { zhi, present: count > 0, count, flags, state, open: isOpenState(state) };
+  const base = { zhi, present: count > 0, count, flags, state, open: isOpenState(state) };
+  if (!monthZhi) return base;
+
+  // 月令层: 墓气与三藏干的旺相休囚死.
+  return {
+    ...base,
+    muQiWangShuai: muku.muQiWangShuai(monthZhi),
+    cangGanWangShuai: muku.cangGanWangShuai(monthZhi),
+  };
 }
 
 /** 四库在这组柱下的判定. */
-export function mukuAll(pillars: readonly PillarC[]): readonly MuKuVerdict[] {
-  return MUKU_ZHI.map((z) => mukuVerdict(z, pillars));
+export function mukuAll(
+  pillars: readonly PillarC[],
+  monthZhi?: ZhiC,
+): readonly MuKuVerdict[] {
+  return MUKU_ZHI.map((z) => mukuVerdict(z, pillars, monthZhi));
 }
 
 /** 一次态变 —— 加入某柱后某库状态改变. */
@@ -235,39 +338,16 @@ export function mukuShift(
   pillars: readonly PillarC[],
   extra: PillarC,
 ): readonly MuKuShift[] {
+  // 态变只比状态, 与月令无关 (月令影响强弱而非开闭), 故不传月支.
   const before = mukuAll(pillars);
   const after = mukuAll([...pillars, extra]);
-  const out: MuKuShift[] = [];
-  for (let i = 0; i < before.length; i++) {
-    const b = before[i]!, a = after[i]!;
-    if (!b.present && !a.present) continue;
-    if (b.state === a.state) continue;
-    out.push({
+  return before.flatMap((b, i) => {
+    const a = after[i]!;
+    if (!b.present && !a.present) return [];
+    if (b.state === a.state) return [];
+    return [{
       zhi: b.zhi, by: extra, from: b.state, to: a.state,
       opened: b.open === a.open ? null : a.open,
-    });
-  }
-  return out;
-}
-
-/**
- * 穷举六十甲子, 找出所有能改变某库状态的干支组合.
- *
- * 库的「解法」与单条关系不同 —— 它是双向的: 原局闭的可能被冲开,
- * 原局开的可能被合闭, 故不分 dissolvers/breakers, 一律以态变呈现.
- */
-export function mukuTransitions(
-  pillars: readonly PillarC[],
-  zhi: Muku,
-): readonly MuKuShift[] {
-  const out: MuKuShift[] = [];
-  for (const g of GAN) {
-    for (const z of ZHI) {
-      if (GAN.indexOf(g) % 2 !== ZHI.indexOf(z) % 2) continue;  // 六十甲子
-      for (const s of mukuShift(pillars, PillarC.from(g, z, "大运"))) {
-        if (s.zhi === zhi) out.push(s);
-      }
-    }
-  }
-  return out;
+    }];
+  });
 }
