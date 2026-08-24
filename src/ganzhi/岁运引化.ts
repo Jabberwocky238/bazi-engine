@@ -12,7 +12,7 @@
  *   冲克 (破) —— 岁运与成员成 冲/克, 则原局的 合 被击破
  *     地支: 岁运支与成员支成 六冲
  *     天干: 岁运干与成员干成 相克
- *   冲开 —— 岁运支与库支 六冲, 冲开墓库 (库由调用方给出)
+ *   (墓库开闭不在本层: 库是状态机, 由 墓库.ts 自行判定)
  *
  * 一个岁运柱对一条关系最多产生一条记录: 逐成员试, 首个命中即止 (同旧实现的 break).
  */
@@ -28,8 +28,16 @@ import { TianGanC, type TianGanHit } from "./天干.ts";
 // 作用类型
 // ———————————————————————————————————————————————
 
-/** 三类作用. */
-export type SuiYunEffect = "引化" | "冲克" | "冲开";
+/**
+ * 四类作用. 前两类为「减弱原关系」, 后两类为「增强原关系」——
+ * 吉凶取决于原关系本身是吉是凶, 本层只描述作用方向, 不作价值判断.
+ *
+ *   引化 —— 岁运与成员成合, 原局的 刑冲破害 被合解 (凶关系减弱)
+ *   冲克 —— 岁运与成员成冲克, 原局的 合会 被击破 (吉关系减弱)
+ *   加重 —— 岁运与成员再成同类 刑冲破害, 凶关系被加重
+ *   助合 —— 岁运与成员再成同类 合会, 吉关系被增强
+ */
+export type SuiYunEffect = "引化" | "冲克" | "加重" | "助合";
 
 /** 一条岁运作用记录. */
 export interface SuiYunMod {
@@ -75,6 +83,26 @@ function 引化关系(e: ZhiC, z: ZhiC): string | undefined {
 /** 岁运支 × 原局支 → 六冲? */
 function 相冲关系(e: ZhiC, z: ZhiC): XPCHC | undefined {
   return XPCHC.at(e, z).find((r) => r.kind === "相冲");
+}
+
+/** 岁运支 × 原局支 → 与 kind 同类的刑冲破害? (用于 加重) */
+function 同类凶关系(e: ZhiC, z: ZhiC, kind: DiZhiRelKind): string | undefined {
+  return XPCHC.at(e, z).find((r) => r.kind === kind)?.name;
+}
+
+/** 岁运支 × 原局支 → 与 kind 同类的合会? (用于 助合) */
+function 同类合关系(e: ZhiC, z: ZhiC, kind: DiZhiRelKind): string | undefined {
+  const direct = HeHuiC.at(e, z).find((r) => r.kind === kind);
+  if (direct) return direct.name;
+  // 三合 / 三会 的两支子集也算助合 (岁运补一支, 与成员凑成半合/拱合)
+  if (kind !== "三合" && kind !== "三会") return undefined;
+  const pair = zhiMask([e, z]);
+  for (const r of HeHuiC.rules) {
+    if (r.kind !== kind) continue;
+    const sub = r.subsets().find((x) => x.mask === pair);
+    if (sub) return sub.name;
+  }
+  return undefined;
 }
 
 /** 岁运干 × 原局干 → 相合? */
@@ -123,7 +151,16 @@ export function 地支岁运作用(
     }
     if (可破) {
       const r = firstHit(members, (z) => 相冲关系(sy.zhi, z)?.name);
-      if (r) out.push({ effect: "冲克", by: sy, via: r.via, target: r.target });
+      if (r) { out.push({ effect: "冲克", by: sy, via: r.via, target: r.target }); continue; }
+    }
+    // 减弱不成立时, 再看是否反而增强了原关系.
+    if (可解) {
+      const r = firstHit(members, (z) => 同类凶关系(sy.zhi, z, hit.kind));
+      if (r) { out.push({ effect: "加重", by: sy, via: r.via, target: r.target }); continue; }
+    }
+    if (可破) {
+      const r = firstHit(members, (z) => 同类合关系(sy.zhi, z, hit.kind));
+      if (r) out.push({ effect: "助合", by: sy, via: r.via, target: r.target });
     }
   }
   return out;
@@ -146,21 +183,17 @@ export function 天干岁运作用(
     }
     if (可破) {
       const r = firstHit(members, (g) => 相克关系(sy.gan, g)?.name);
-      if (r) out.push({ effect: "冲克", by: sy, via: r.via, target: r.target });
+      if (r) { out.push({ effect: "冲克", by: sy, via: r.via, target: r.target }); continue; }
     }
-  }
-  return out;
-}
-
-/** 墓库冲开 —— 岁运支与库支 六冲. */
-export function 墓库冲开(
-  muZhi: ZhiC,
-  suiyun: readonly PillarC[],
-): readonly SuiYunMod[] {
-  const out: SuiYunMod[] = [];
-  for (const sy of suiyun) {
-    const r = 相冲关系(sy.zhi, muZhi);
-    if (r) out.push({ effect: "冲开", by: sy, via: r.name, target: muZhi });
+    // 减弱不成立时, 再看是否反而增强了原关系.
+    if (可解) {
+      const r = firstHit(members, (g) => TianGanC.at(sy.gan, g).find((x) => x.kind === hit.kind)?.name);
+      if (r) { out.push({ effect: "加重", by: sy, via: r.via, target: r.target }); continue; }
+    }
+    if (可破) {
+      const r = firstHit(members, (g) => 相合关系(sy.gan, g)?.name);
+      if (r) out.push({ effect: "助合", by: sy, via: r.via, target: r.target });
+    }
   }
   return out;
 }
@@ -177,6 +210,10 @@ export interface SuiYunHit<H> {
   readonly dissolved: boolean;
   /** 被冲克 (击破). */
   readonly impacted: boolean;
+  /** 被加重 (凶关系变重). */
+  readonly aggravated: boolean;
+  /** 被助合 (吉关系变强). */
+  readonly reinforced: boolean;
 }
 
 const wrap = <H>(hit: H, mods: readonly SuiYunMod[]): SuiYunHit<H> => ({
@@ -184,6 +221,8 @@ const wrap = <H>(hit: H, mods: readonly SuiYunMod[]): SuiYunHit<H> => ({
   mods,
   dissolved: mods.some((m) => m.effect === "引化"),
   impacted: mods.some((m) => m.effect === "冲克"),
+  aggravated: mods.some((m) => m.effect === "加重"),
+  reinforced: mods.some((m) => m.effect === "助合"),
 });
 
 /** 给一批地支关系挂上岁运作用. */

@@ -2,11 +2,13 @@ import { computeShensha, type Shensha } from "@/shensha";
 import {
     analyzeGanZhi, detect as detectWholePillar, pairwiseGan, pairwiseZhi,
     type DiZhiHit, type GanZhiAnalysis, type PairGan, type PairZhi,
-    DiZhiDetector, TianGanDetector,
+    DiZhiDetector, TianGanDetector, 地支解法, 天干解法,
+    mukuAll, mukuShift, mukuTransitions,
+    type MuKuShift, type MuKuVerdict, type RemedySet,
     type SuiYunHit, type TianGanHit, type WholePillarHit, type WholePillarR, type ZhengHeHit,
 } from "@/ganzhi";
 import { type Shishen, type ShishenCat, shishenOf, ShishenC, ShishenCC } from "@/shishen";
-import { BaziInputC, GAN_WUXING, GanC, PillarC, WuXingC, type ChangSheng, type Pillar, type Sex, type ZhiC } from "@/types";
+import { BaziInputC, GAN_WUXING, GanC, PillarC, WuXingC, type ChangSheng, type Muku, type Pillar, type Sex, type ZhiC } from "@/types";
 
 export interface ICalculator {
     touGan(): GanC[]
@@ -60,6 +62,17 @@ export interface IGanZhiCalculator {
     ganDetector(extras?: PillarC[]): TianGanDetector
     /** 地支 detector, 入列规则同 {@link ganDetector}. */
     zhiDetector(extras?: PillarC[]): DiZhiDetector
+    /**
+     * 每条关系的解法 —— 反推「哪些干支能解开 / 打破它」.
+     * 刑冲破害 给出 dissolvers (引化), 合会 给出 breakers (冲克).
+     */
+    remedies(extras?: PillarC[]): readonly RemedySet[]
+    /** 原局四墓库的开闭判定 (库不在盘中时 present=false). */
+    muku(extras?: PillarC[]): readonly MuKuVerdict[]
+    /** 某岁运柱引起的墓库态变 (开→闭 / 闭→开). */
+    mukuShifts(extra: PillarC, extras?: PillarC[]): readonly MuKuShift[]
+    /** 穷举干支, 找出所有能改变某库状态的组合. */
+    mukuTransitions(muZhi: Muku, extras?: PillarC[]): readonly MuKuShift[]
     /** 两支查表 (六合/六冲/六害/六破/刑/半合). */
     pairZhi(a: ZhiC, b: ZhiC): PairZhi | null
     /** 两干查表 (相合 优先, 其次 相克). */
@@ -479,6 +492,26 @@ export class GanZhiCalculator implements IGanZhiCalculator {
             ...this.originPillars.map((p) => p.zhi),
             ...extras.map((p) => p.zhi),
         ])
+    }
+
+    remedies(extras: PillarC[] = []): readonly RemedySet[] {
+        return [
+            ...this.ganDetector(extras).hits.map(天干解法),
+            ...this.zhiDetector(extras).hits.map(地支解法),
+        ]
+    }
+
+
+    muku(extras: PillarC[] = []): readonly MuKuVerdict[] {
+        return mukuAll([...this.originPillars, ...extras])
+    }
+
+    mukuShifts(extra: PillarC, extras: PillarC[] = []): readonly MuKuShift[] {
+        return mukuShift([...this.originPillars, ...extras], extra)
+    }
+
+    mukuTransitions(muZhi: Muku, extras: PillarC[] = []): readonly MuKuShift[] {
+        return mukuTransitions([...this.originPillars, ...extras], muZhi)
     }
 
     pairZhi(a: ZhiC, b: ZhiC): PairZhi | null {

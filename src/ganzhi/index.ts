@@ -32,6 +32,8 @@ export * from "./天干.ts";
 export * from "./地支.ts";
 export * from "./岁运引化.ts";
 export * from "./整柱.ts";
+export * from "./墓库.ts";
+export * from "./解法.ts";
 
 // ———————————————————————————————————————————————
 // 汇总分析
