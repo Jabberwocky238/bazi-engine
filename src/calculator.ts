@@ -1,6 +1,5 @@
-import { changshengState, GAN_WUXING, type ChangSheng, type Pillar } from "./types";
+import { GAN_WUXING, type ChangSheng, type Pillar } from "./types";
 import { PILLAR_LABELS, type PillarType } from "./ganzhi";
-import { nayinNameOf } from "./types";
 import { computeShensha, type Shensha } from "./shensha";
 import { type Shishen, type ShishenCat, shishenOf, ShishenC, ShishenCC } from "./shishen";
 import { GanC, PillarC, WuXingC, type BaziInput, type Gan, type Sex, type ZhiC } from "./types";
@@ -102,9 +101,9 @@ export class Calculator implements ICalculator {
                     isRizhu: i === 2,
                 },
                 zhi: p.zhi,
-                nayin: nayinNameOf(p.gan, p.zhi),
+                nayin: p.nayinName(),
                 shensha: realshensha[i] ? realshensha[i]! : [],
-                changsheng: changshengState(dayGan.str, p.zhi.str),
+                changsheng: PillarC.from(dayGan, p.zhi).changsheng(),
             }
         })
     }

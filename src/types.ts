@@ -105,35 +105,10 @@ export const WUXING_BY_RELATION_TABLE = createTable(
     RELATIONS,
     WUXING,
 );
-/** 取干支对应的完整纳音名 (如 甲子 => "海中金"). */
-export function nayinNameOf(gan: GanC, zhi: ZhiC): string {
-    const name = LunarUtil.NAYIN[`${gan.str}${zhi.str}`];
-    if (!name) throw new Error(`invalid ganzhi ${gan.str}${zhi.str}`);
-    return name;
-}
-export function nayinOf(gan: GanC, zhi: ZhiC): WuXingC {
-    const name = nayinNameOf(gan, zhi);
-    const wx = name.charAt(name.length - 1);
-    if (wx !== "金" && wx !== "木" && wx !== "水" && wx !== "火" && wx !== "土") {
-        throw new Error(`unexpected nayin ${name}`);
-    }
-    return WuXingC.from(wx);
-}
 export const KONGWANG_XUN: readonly (readonly [Zhi, Zhi])[] = [
     ["戌", "亥"], ["申", "酉"], ["午", "未"],
     ["辰", "巳"], ["寅", "卯"], ["子", "丑"],
 ];
-export function kongwangFor(gan: GanC, zhi: ZhiC): readonly [ZhiC, ZhiC] {
-    const g = GAN.indexOf(gan.str), z = ZHI.indexOf(zhi.str);
-    for (let n = 0; n < 60; n++) {
-        if (n % 10 === g && n % 12 === z) {
-            const row = KONGWANG_XUN[Math.floor(n / 10)];
-            if (!row) throw new Error(`kongwang table miss at xun ${Math.floor(n / 10)}`);
-            return [ZhiC.from(row[0]), ZhiC.from(row[1])];
-        }
-    }
-    throw new Error(`invalid pillar ${gan}${zhi}`);
-}
 export const LIFE_STATES = [
     "长生",
     "沐浴",
@@ -183,32 +158,16 @@ export const CHANGSHENG_TABLE_WRAPPER = createTable(
     ZHI,
 );
 
-export function changshengState(gan: Gan, zhi: Zhi): ChangSheng {
+function changshengOf(gan: Gan, zhi: Zhi): ChangSheng {
     return CHANGSHENG_TABLE_WRAPPER[gan][zhi];
-}
-
-export function isYueling(dayGan: Gan, monthZhi: Zhi, targetZhi: Zhi): boolean {
-    return changshengState(dayGan, targetZhi) === changshengState(dayGan, monthZhi);
-}
-
-export function isLu(dayGan: Gan, targetZhi: Zhi): boolean {
-    return changshengState(dayGan, targetZhi) === "临官";
-}
-
-export function isRen(dayGan: Gan, targetZhi: Zhi): boolean {
-    return changshengState(dayGan, targetZhi) === "帝旺";
 }
 /** 月令 / 禄位 / 刃: 以月支和日干的十二长生状态推算目标地支. */
 function zhiByChangsheng(dayGan: Gan, state: ChangSheng): Zhi {
-    const zhi = ZHI.find(z => changshengState(dayGan, z) === state);
+    const zhi = ZHI.find(z => changshengOf(dayGan, z) === state);
     if (!zhi) throw new Error(`unreachable: no ${state} zhi for ${dayGan}`);
     return zhi;
 }
 
-/** 十干禄位 = 十二长生「临官」位. */
-export function luWeiOf(dayGan: Gan): Zhi { return zhiByChangsheng(dayGan, "临官"); }
-/** 刃位 = 十二长生「帝旺」位. */
-export function renWeiOf(dayGan: Gan): Zhi { return zhiByChangsheng(dayGan, "帝旺"); }
 
 export class TriadC {
     private constructor(public readonly key: TriadKey) { }
@@ -306,6 +265,10 @@ export class GanC {
     static from(str: Gan): GanC {
         return GanC.map[str];
     }
+    /** 在 GAN 中的索引 (0 = 甲 ... 9 = 癸). */
+    get index(): number {
+        return GAN.indexOf(this.str);
+    }
     get wuxing(): WuXingC {
         return WuXingC.from(GAN_WUXING[this.str])
     }
@@ -355,6 +318,10 @@ export class ZhiC {
     canggan(): GanC[] {
         return CANG_GAN[this.str].map((i) => GanC.from(i))
     }
+    /** 在 ZHI 中的索引 (0 = 子 ... 11 = 亥). */
+    get index(): number {
+        return ZHI.indexOf(this.str);
+    }
 }
 export class MukuC {
     public 本气: GanC
@@ -395,7 +362,7 @@ export class PillarC {
     ) { }
     
     static from(gan: Gan, zhi: Zhi): PillarC;
-static from(gan: GanC, zhi: ZhiC): PillarC;
+    static from(gan: GanC, zhi: ZhiC): PillarC;
     static from(gan: GanC | Gan, zhi: ZhiC | Zhi): PillarC {
         if (typeof gan === "string" && typeof zhi === "string") {
             return new PillarC(GanC.from(gan), ZhiC.from(zhi))
@@ -406,11 +373,112 @@ static from(gan: GanC, zhi: ZhiC): PillarC;
     static fromPillar(pillar: Pillar): PillarC {
         return PillarC.from(pillar.gan as Gan, pillar.zhi as Zhi)
     }
+
+    /** 本柱干支对应的完整纳音名 (如 甲子 => "海中金"). */
+    nayinName(): string {
+        const name = LunarUtil.NAYIN[`${this.gan.str}${this.zhi.str}`];
+        if (!name) throw new Error(`invalid ganzhi ${this.gan.str}${this.zhi.str}`);
+        return name;
+    }
+
+    /** 本柱纳音五行. */
+    nayin(): WuXingC {
+        const name = this.nayinName();
+        const wx = name.charAt(name.length - 1);
+        if (wx !== "金" && wx !== "木" && wx !== "水" && wx !== "火" && wx !== "土") {
+            throw new Error(`unexpected nayin ${name}`);
+        }
+        return WuXingC.from(wx);
+    }
+
+    /** 本柱所在旬的两个空亡地支. */
+    kongwang(): readonly [ZhiC, ZhiC] {
+        const g = this.gan.index, z = this.zhi.index;
+        for (let n = 0; n < 60; n++) {
+            if (n % 10 === g && n % 12 === z) {
+                const row = KONGWANG_XUN[Math.floor(n / 10)];
+                if (!row) throw new Error(`kongwang table miss at xun ${Math.floor(n / 10)}`);
+                return [ZhiC.from(row[0]), ZhiC.from(row[1])];
+            }
+        }
+        throw new Error(`invalid pillar ${this.gan.str}${this.zhi.str}`);
+    }
+
+    /** 本柱干支的十二长生状态. */
+    changsheng(): ChangSheng {
+        return changshengOf(this.gan.str, this.zhi.str);
+    }
+
+    /** 把本柱的干与支压成掩码. */
+    ganzhiMask(): GanZhiMask {
+        return GANZHI_BITS.encode([this.gan.str, this.zhi.str]);
+    }
 }
 
-/** 把柱的干与支压成掩码. */
-export function ganzhiMask(pillars: readonly PillarC[]): GanZhiMask {
-  return GANZHI_BITS.encode(pillars.flatMap((p) => [p.gan.str, p.zhi.str]));
+/** C 化的八字输入: 四柱均为 PillarC. */
+export class BaziInputC {
+  constructor(
+    public readonly year: PillarC,
+    public readonly month: PillarC,
+    public readonly day: PillarC,
+    public readonly hour: PillarC | undefined,
+    public readonly sex: Sex,
+  ) { }
+
+  /** BaziInput -> BaziInputC. */
+  static from(bazi: BaziInput): BaziInputC {
+    return new BaziInputC(
+      PillarC.fromPillar(bazi.year),
+      PillarC.fromPillar(bazi.month),
+      PillarC.fromPillar(bazi.day),
+      bazi.hour ? PillarC.fromPillar(bazi.hour) : undefined,
+      bazi.sex,
+    );
+  }
+
+  /** 目标地支对日干的十二长生状态. */
+  changsheng(targetZhi: ZhiC): ChangSheng {
+    return changshengOf(this.day.gan.str, targetZhi.str);
+  }
+
+  /** 目标地支是否与月支同处一个十二长生状态 (月令). */
+  isYueling(targetZhi: ZhiC): boolean {
+    return this.changsheng(targetZhi) === this.changsheng(this.month.zhi);
+  }
+
+  /** 目标地支是否为日干禄位. */
+  isLu(targetZhi: ZhiC): boolean {
+    return this.changsheng(targetZhi) === "临官";
+  }
+
+  /** 目标地支是否为日干刃位. */
+  isRen(targetZhi: ZhiC): boolean {
+    return this.changsheng(targetZhi) === "帝旺";
+  }
+
+  /** 十干禄位 = 日干十二长生「临官」位. */
+  luWei(): ZhiC {
+    return ZhiC.from(zhiByChangsheng(this.day.gan.str, "临官"));
+  }
+
+  /** 刃位 = 日干十二长生「帝旺」位. */
+  renWei(): ZhiC {
+    return ZhiC.from(zhiByChangsheng(this.day.gan.str, "帝旺"));
+  }
+
+  /** BaziInputC -> BaziInput (字符串字面量形式). */
+  toBaziInput(): BaziInput {
+    return {
+      year: { gan: this.year.gan.str, zhi: this.year.zhi.str },
+      month: { gan: this.month.gan.str, zhi: this.month.zhi.str },
+      day: { gan: this.day.gan.str, zhi: this.day.zhi.str },
+      hour: this.hour
+        ? { gan: this.hour.gan.str, zhi: this.hour.zhi.str }
+        : undefined,
+      sex: this.sex,
+    };
+  }
 }
+
 
 
