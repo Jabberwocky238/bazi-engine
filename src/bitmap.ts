@@ -22,22 +22,29 @@ type KeyedTensor<Value, Keys extends readonly (readonly PropertyKey[])[]> = Keys
 
 type TensorLeaf<T> = T extends readonly (infer Item)[] ? TensorLeaf<Item> : T;
 
-type BitListT<Items extends readonly unknown[], Length extends number> = readonly (Items[number] | undefined)[] & { readonly length: Length };
-
 class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
   public constructor(public readonly items: Items, public readonly length: BitLength) {
-    if (length < 0 || length > 31 || items.length > 2 ** length) {
+    if (length < 0 || length > 31 || items.length > length) {
       throw new RangeError("Invalid bit length");
     }
   }
-  public decode(flag: number): BitListT<Items, Items["length"]> {
-    return Array.from({ length: this.items.length }, (_, bit) => (flag & (1 << bit)) !== 0 ? this.items[bit] : undefined) as unknown as BitListT<Items, Items["length"]>;
+  public get size(): number {
+    return 2 ** this.length;
   }
-  public encode(item: Partial<Record<Items[number], boolean>>): number {
-    let mask = 0;
+  public decode(mask: number): Items[number][] {
+    const result: Items[number][] = [];
     this.items.forEach((item, bit) => {
-      if (flags[item as Items[number]]) mask |= 1 << bit;
+      if ((mask & (1 << bit)) !== 0) result.push(item as Items[number]);
     });
+    return result;
+  }
+  public encode(items: Items[number][]): number {
+    let mask = 0;
+    for (const item of items) {
+      const bit = this.items.indexOf(item);
+      if (bit === -1) throw new RangeError(`Unknown item: ${String(item)}`);
+      mask |= 1 << bit;
+    }
     return mask;
   }
 }

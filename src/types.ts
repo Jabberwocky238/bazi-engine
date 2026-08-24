@@ -6,7 +6,7 @@
  */
 
 import { LunarUtil } from "lunar-typescript";
-import { createTable, type Table } from "./bitmap.ts";
+import { createTable, createBitList, type Table } from "./bitmap.ts";
 export const WUXING = ["木", "火", "土", "金", "水"] as const;
 export type WuXing = typeof WUXING[number]
 export const GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
@@ -15,6 +15,11 @@ export const ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申
 export type Zhi = typeof ZHI[number]
 export type Muku = Extract<Zhi, "辰" | "未" | "戌" | "丑">;
 export type Pillar = { gan: Gan, zhi: Zhi }
+
+/** 干支位表 — 10 干 + 12 支 = 22 位, 一个数即一组干支. */
+export const GANZHI_BITS = createBitList([...GAN, ...ZHI], 22);
+/** 一组干支的位掩码. */
+export type GanZhiMask = number;
 export type TriadKey = "申子辰" | "寅午戌" | "亥卯未" | "巳酉丑";
 export type Season = "春" | "夏" | "秋" | "冬";
 /** sex: 1 = 男, 0 = 女. 性别相关神煞 (如 元辰) 必填. */
@@ -352,7 +357,24 @@ export class ZhiC {
     }
 }
 export class MukuC {
-    private constructor(public str: Muku) { }
+    public 本气: GanC
+    public 中气: GanC
+    public 余气: GanC
+    public Wx: WuXingC
+
+    private constructor(public str: Muku) { 
+        const MUKU = {
+            辰: { benqi: "戊", zhongqi: "乙", yuqi: "癸", muqi: "癸", muqiWx: "水", name: "水库" },
+            未: { benqi: "己", zhongqi: "丁", yuqi: "乙", muqi: "乙", muqiWx: "木", name: "木库" },
+            戌: { benqi: "戊", zhongqi: "辛", yuqi: "丁", muqi: "丁", muqiWx: "火", name: "火库" },
+            丑: { benqi: "己", zhongqi: "癸", yuqi: "辛", muqi: "辛", muqiWx: "金", name: "金库" },
+        } as const;
+        const muku = MUKU[str]
+        this.Wx = WuXingC.from(muku.muqiWx)
+        this.本气 = GanC.from(muku.benqi)
+        this.中气 = GanC.from(muku.zhongqi)
+        this.余气 = GanC.from(muku.yuqi)
+    }
 
     static readonly map = {
         辰: new MukuC("辰"),
@@ -385,4 +407,10 @@ static from(gan: GanC, zhi: ZhiC): PillarC;
         return PillarC.from(pillar.gan as Gan, pillar.zhi as Zhi)
     }
 }
+
+/** 把柱的干与支压成掩码. */
+export function ganzhiMask(pillars: readonly PillarC[]): GanZhiMask {
+  return GANZHI_BITS.encode(pillars.flatMap((p) => [p.gan.str, p.zhi.str]));
+}
+
 

@@ -3,7 +3,7 @@
  *
  *   : 天干五合 · 天干相冲 · 天干相克
  *   : 地支六合 · 地支三合 · 地支三会 · 地支暗合
- *         地支相刑 · 地支相冲 · 地支相破 · 地支相害 · 墓库
+ *         地支相刑 · 地支相冲 · 地支相破 · 地支相害
  *   : 盖头 · 截脚 · 覆载 (单柱内天干地支作用)
  *
  * 统一签名: detector.detect(pillars, extras) → Finding[].
@@ -40,7 +40,6 @@ import { 地支相刑, type XingFinding } from "./地支相刑.ts";
 import { 地支相冲, type ChongFinding } from "./地支相冲.ts";
 import { 地支相破, type PoFinding } from "./地支相破.ts";
 import { 地支相害, type HaiFinding } from "./地支相害.ts";
-import { 墓库, type MuKuFinding } from "./墓库.ts";
 
 // --- 整柱 ---------------------------------------------------------------
 import { detect as detectWholePillar } from "./盖头截脚覆载.ts";
@@ -59,8 +58,6 @@ export interface GanZhiAnalysis {
   地支相刑: XingFinding[];
   地支相破: PoFinding[];
   地支相害: HaiFinding[];
-  // 墓库
-  墓库: MuKuFinding[];
 }
 
 export function analyzeGanZhi(
@@ -80,7 +77,6 @@ export function analyzeGanZhi(
     地支相冲: 地支相冲.detect(pillars, extras),
     地支相破: 地支相破.detect(pillars, extras),
     地支相害: 地支相害.detect(pillars, extras),
-    墓库: 墓库.detect(pillars, extras),
   };
 }
 

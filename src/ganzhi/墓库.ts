@@ -13,18 +13,13 @@
  *   默认:
  *     - 墓气未透 → 闭库
  */
-import { GAN, ZHI, type Gan, type Pillar, type WuXing, type Zhi, type Muku } from "@/types.ts";
+import { GAN, ZHI, GANZHI_BITS, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "@/types.ts";
 import { createTable, createBitList, type Table } from "@/bitmap.ts";
-import {
-  POS_NAMES, hasGan, openersByZhi,
-  type ExtraPillar, type FindingMod,
-} from "./common.ts";
 
 // ———————————————————————————————————————————————
-// 结构化类型 — detect 返回 MuKuFinding[]
+// 状态类型
 // ———————————————————————————————————————————————
 // 墓库为单一子类别, 状态由 透墓气 / 被冲 / 被刑 / 天干冲开 / 天干合闭 组合决定.
-// 旧版把状态压进 state, 各触发标志只在 note 字符串里描述.
 
 /** 墓库状态. */
 export type MuKuState =
@@ -36,10 +31,9 @@ export type MuKuState =
   | "闭库";      // 墓气未透
 
 // ———————————————————————————————————————————————
-// 状态判定表 — 5 个触发标志各占 1 bit, 掩码作行下标
+// 状态判定 — 5 个触发标志, 规则链定状态
 // ———————————————————————————————————————————————
-// 位序由 MUKU_FLAG_BITS 的 items 决定; 库只决定标志怎么算 (见 detect),
-// 不影响标志组合如何定状态.
+// 库只决定标志怎么算 (见 MUKU_RULES), 不影响标志组合如何定状态.
 
 /** 状态标志位 (bit0..bit4). */
 export const MUKU_FLAG_BITS = createBitList(
@@ -47,26 +41,27 @@ export const MUKU_FLAG_BITS = createBitList(
   5,
 );
 
-MUKU_FLAG_透墓气 = MUKU_FLAG_BITS.encode("透墓气")
+/** 单个标志名. */
+export type MuKuFlag = (typeof MUKU_FLAG_BITS.items)[number];
+/** 标志组合. */
+export type MuKuFlags = Partial<Record<MuKuFlag, boolean>>;
 
-interface KuInfo {
-  readonly benqi: Gan;
-  readonly zhongqi: Gan;
-  readonly yuqi: Gan;
-  readonly muqi: Gan;
-  readonly muqiWx: WuXing;
-  readonly name: string;
+/** 规则链 — 顺序即优先级, 首个命中者定状态. */
+const MUKU_STATE_RULES: readonly (readonly [MuKuState, (f: Required<MuKuFlags>) => boolean])[] = [
+  ["冲刑开库", (f) => f.被冲 || f.被刑],
+  ["自动开库", (f) => f.透墓气 && !f.天干合闭],
+  ["天干冲开", (f) => f.天干冲开],
+  ["天干合闭", (f) => f.天干合闭],
+  ["闭库", (f) => !f.透墓气],
+];
+
+/** 判定状态. */
+export function mukuState(flags: MuKuFlags): MuKuState {
+  const f = Object.fromEntries(
+    MUKU_FLAG_BITS.items.map((item) => [item, flags[item] ?? false]),
+  ) as Required<MuKuFlags>;
+  return MUKU_STATE_RULES.find(([, hit]) => hit(f))?.[0] ?? "静库";
 }
-
-const MUKU: Readonly<Partial<Record<Zhi, KuInfo>>> = {
-  辰: { benqi: "戊", zhongqi: "乙", yuqi: "癸", muqi: "癸", muqiWx: "水", name: "水库" },
-  未: { benqi: "己", zhongqi: "丁", yuqi: "乙", muqi: "乙", muqiWx: "木", name: "木库" },
-  戌: { benqi: "戊", zhongqi: "辛", yuqi: "丁", muqi: "丁", muqiWx: "火", name: "火库" },
-  丑: { benqi: "己", zhongqi: "癸", yuqi: "辛", muqi: "辛", muqiWx: "金", name: "金库" },
-};
-
-/** Static lookup for callers that need the four treasury definitions. */
-export const MUKU_TABLE = Object.freeze(MUKU);
 
 /** Ordered treasury table, aligned with MUKU_ZHI_KEYS. */
 export type MuKuQi = "本气" | "中气" | "余气" | null;
@@ -85,136 +80,37 @@ export const MUKU_QI_TABLE = [
 
 export const MUKU_TABLE_WRAPPER = createTable(MUKU_QI_TABLE,GAN,ZHI);
 
-export interface MuKuFinding {
-  kind: "墓库";
-  name: string;                 // "辰 · 水库"
-  slots: readonly [number];
-  state: MuKuState;
-  /** 库支. */
-  zhi: Zhi;
-  /** 库名 (水库/木库/火库/金库). */
-  kuName: string;
-  /** 墓气天干. */
-  muqi: Gan;
-  /** 墓气五行. */
-  muqiWx: WuXing;
-  /** 墓气是否透干. */
-  touMuqi: boolean;
-  /** 被对冲支冲 (辰↔戌, 丑↔未). */
-  beingChong: boolean;
-  /** 被丑戌未三刑. */
-  xingOpen: boolean;
-  /** 天干冲开天库 (丁癸/乙辛). */
-  tianChongOpen: boolean;
-  /** 天干合闭天库. */
-  tianHeClose: boolean;
-  /** extras 中与本柱地支六冲 → 冲开. */
-  opened?: FindingMod[];
-}
+/** 触发一条标志所需的干支 (全部到位才算命中). */
+type MuKuRule = readonly [flag: MuKuFlag, zhi: Muku, needs: readonly (Gan | Zhi)[]];
 
-/** 对冲支 (辰↔戌, 丑↔未). */
-const CHONG_PAIR: Readonly<Record<string, string>> = {
-  辰: "戌", 戌: "辰", 丑: "未", 未: "丑",
-};
+/**
+ * 触发规则 — needs 压成掩码后与命盘掩码做子集判定.
+ * md: 开库.md (被冲 / 被刑 / 天干冲开) + 闭库.md (天干合闭).
+ */
+const MUKU_RULES: readonly MuKuRule[] = [
+  // 对冲支 (辰↔戌, 丑↔未)
+  ["被冲", "辰", ["戌"]], ["被冲", "戌", ["辰"]],
+  ["被冲", "丑", ["未"]], ["被冲", "未", ["丑"]],
+  // 丑戌未 三刑的两两组合 (库被刑)
+  ["被刑", "丑", ["戌"]], ["被刑", "戌", ["未"]], ["被刑", "未", ["丑"]],
+  // 丁癸 冲开辰戌, 乙辛 冲开未丑
+  ["天干冲开", "辰", ["丁", "癸"]], ["天干冲开", "戌", ["丁", "癸"]],
+  ["天干冲开", "未", ["乙", "辛"]], ["天干冲开", "丑", ["乙", "辛"]],
+  // 戊癸合辰, 乙庚合未, 丁壬合戌, 丙辛合丑
+  ["天干合闭", "辰", ["戊", "癸"]], ["天干合闭", "未", ["乙", "庚"]],
+  ["天干合闭", "戌", ["丁", "壬"]], ["天干合闭", "丑", ["丙", "辛"]],
+];
 
-/** 天干冲开天库. md: 开库.md — 丁癸 冲开辰戌, 乙辛 冲开未丑. */
-const TIAN_CHONG_OPEN: Readonly<Record<string, readonly string[]>> = {
-  丁癸: ["辰", "戌"],
-  乙辛: ["未", "丑"],
-};
+/** 预编译: 规则的 needs → 掩码, 避免每次判定重新 encode. */
+const MUKU_RULE_MASKS: readonly (readonly [MuKuFlag, Muku, number])[] = MUKU_RULES.map(
+  ([flag, zhi, needs]) => [flag, zhi, GANZHI_BITS.encode([...needs])] as const,
+);
 
-/** 天干合闭天库. md: 闭库.md. */
-const TIAN_HE_CLOSE: Readonly<Record<string, string>> = {
-  戊癸: "辰", 乙庚: "未", 丁壬: "戌", 丙辛: "丑",
-};
-
-function detect(pillars: Pillar[], extras: ExtraPillar[] = []): MuKuFinding[] {
-  const out: MuKuFinding[] = [];
-  const zhiSet = pillars.map((p) => p.zhi);
-
-  for (const [zhi, ku] of Object.entries(MUKU) as [Zhi, KuInfo][]) {
-    const idx = zhiSet.indexOf(zhi);
-    if (idx < 0) continue;
-
-    const touMuqi = hasGan(pillars, ku.muqi);
-    const chongCounterpart = CHONG_PAIR[zhi]!;
-    const beingChong = zhiSet.includes(chongCounterpart as Zhi);
-    // 丑戌未 三刑的两两组合 (库被刑)
-    const xingOpen = (zhi === "丑" && zhiSet.includes("戌")) ||
-      (zhi === "戌" && zhiSet.includes("未")) ||
-      (zhi === "未" && zhiSet.includes("丑"));
-
-    let tianChongOpen = false;
-    for (const [pair, zhis] of Object.entries(TIAN_CHONG_OPEN)) {
-      if (zhis.includes(zhi) && hasGan(pillars, pair[0]! as Gan) && hasGan(pillars, pair[1]! as Gan) && touMuqi) {
-        tianChongOpen = true;
-        break;
-      }
-    }
-
-    let tianHeClose = false;
-    for (const [pair, targetZhi] of Object.entries(TIAN_HE_CLOSE)) {
-      if (targetZhi === zhi && hasGan(pillars, pair[0]! as Gan) && hasGan(pillars, pair[1]! as Gan) && touMuqi) {
-        tianHeClose = true;
-        break;
-      }
-    }
-
-    const state = mukuState({
-      透墓气: touMuqi,
-      被冲: beingChong,
-      被刑: xingOpen,
-      天干冲开: tianChongOpen,
-      天干合闭: tianHeClose,
-    });
-
-    const f: MuKuFinding = {
-      kind: "墓库",
-      name: `${zhi} · ${ku.name}`,
-      slots: [idx],
-      state,
-      zhi,
-      kuName: ku.name,
-      muqi: ku.muqi,
-      muqiWx: ku.muqiWx,
-      touMuqi,
-      beingChong,
-      xingOpen,
-      tianChongOpen,
-      tianHeClose,
-    };
-    const opn = openersByZhi(zhi, extras);
-    if (opn.length) f.opened = opn;
-    out.push(f);
+/** 命盘掩码 → 某库命中的标志集 (不含 透墓气, 它由墓气是否透干单独决定). */
+export function triggeredFlags(zhi: Muku, mask: GanZhiMask): MuKuFlags {
+  const flags: MuKuFlags = {};
+  for (const [flag, ruleZhi, need] of MUKU_RULE_MASKS) {
+    if (ruleZhi === zhi && (mask & need) === need) flags[flag] = true;
   }
-  return out;
+  return flags;
 }
-
-/** Return the finding for a specific treasury, if it exists in the chart. */
-export function findByZhi(
-  findings: readonly MuKuFinding[],
-  zhi: Zhi,
-): MuKuFinding | undefined {
-  return findings.find((finding) => finding.zhi === zhi);
-}
-
-/** Whether a finding represents an opened treasury state. */
-export function isOpen(finding: Pick<MuKuFinding, "state">): boolean {
-  return finding.state !== "闭库";
-}
-
-/** Compact state counts for reports and UI summaries. */
-export function summarize(findings: readonly MuKuFinding[]): Readonly<Record<MuKuState, number>> {
-  const summary: Record<MuKuState, number> = {
-    "静库": 0,
-    "自动开库": 0,
-    "冲刑开库": 0,
-    "天干冲开": 0,
-    "天干合闭": 0,
-    "闭库": 0,
-  };
-  for (const finding of findings) summary[finding.state] += 1;
-  return summary;
-}
-
-export const 墓库 = { name: "墓库", detect, findByZhi, isOpen, summarize } as const;
