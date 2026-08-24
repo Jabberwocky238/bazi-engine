@@ -2,9 +2,7 @@
  * 正学堂: 柱纳音 = 年纳音五行, 且柱支 = 学堂位 (年纳音长生).
  * 这里表中每种纳音五行对应唯一一组满足条件的干支. 年柱不标.
  */
-import type { GanZhi, NayinWuxing } from "./common.ts";
-import { nayinOf } from "./common.ts";
-import { gzOf, pillarAt, type ShenshaCheck } from "./common.ts";
+import { nayinOf, gzOf, pillarAt, type GanZhi, type NayinWuxing, type ShenshaCheck } from "./common.ts";
 
 /** 每种年纳音五行对应的正学堂干支. 供 `学堂.ts` 做排除检查. */
 export const ZHENG_XUE_TANG_GZ: Readonly<Record<NayinWuxing, GanZhi>> = {

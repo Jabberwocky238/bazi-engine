@@ -4,7 +4,7 @@
  *   戊猴己未丁宜亥, 乙癸逢牛卯禄昌;
  *   庚趋马首辛到巳, 壬骑龙背喜非常.
  */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const FU_XING: Readonly<Record<Gan, readonly Zhi[]>> = {

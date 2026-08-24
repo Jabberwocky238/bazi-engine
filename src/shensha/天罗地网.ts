@@ -5,7 +5,7 @@
  *   日柱: 柱支 ∈ {辰,巳,戌,亥} 且 年支 = 对家 → 标.
  *   月/时柱: 柱支 ∈ {辰,巳,戌,亥} 且 年支 或 日支 = 对家 → 标.
  */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const PARTNER: Partial<Record<Zhi, Zhi>> = {

@@ -1,6 +1,5 @@
 /** 天罗: 年命纳音为火 + 日支戌/亥. 仅标日柱. */
-import { nayinOf } from "./common.ts";
-import { type ShenshaCheck } from "./common.ts";
+import { nayinOf, type ShenshaCheck } from "./common.ts";
 
 const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2) return false;

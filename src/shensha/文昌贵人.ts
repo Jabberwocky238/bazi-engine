@@ -1,5 +1,5 @@
 /** 文昌贵人 (年干 或 日干 → 地支). 阳干长生位之冲, 阴干长生位. */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const WEN_CHANG: Readonly<Record<Gan, Zhi>> = {

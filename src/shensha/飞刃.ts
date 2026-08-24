@@ -1,5 +1,5 @@
 /** 飞刃 = 羊刃冲支 (日干 → 地支). */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const FEI_REN: Readonly<Record<Gan, Zhi>> = {

@@ -3,7 +3,7 @@
  * 古诀: 甲鸡乙犬丙羊加, 丁是猴乡戊见蛇;
  *       己马庚龙辛逐兔, 壬猪癸虎是流霞.
  */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const LIU_XIA: Readonly<Record<Gan, Zhi>> = {

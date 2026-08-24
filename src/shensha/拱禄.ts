@@ -1,6 +1,5 @@
 /** 拱禄: 日柱 + 时柱 固定五组 (《三命通会·拱禄拱贵》). 仅标日柱. */
-import type { GanZhi } from "./common.ts";
-import { gzOf, type ShenshaCheck } from "./common.ts";
+import { gzOf, type GanZhi, type ShenshaCheck } from "./common.ts";
 
 const GONG_LU_DAY_HOUR: readonly (readonly [GanZhi, GanZhi])[] = [
   ["癸亥","癸丑"], ["癸丑","癸亥"],          // 拱子

@@ -1,5 +1,5 @@
 /** 天医 (月支前一位地支). 正月(寅)见丑, 二月(卯)见寅, 依此类推. */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TIAN_YI_XING: Readonly<Record<Zhi, Zhi>> = {

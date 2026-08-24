@@ -3,7 +3,7 @@
  *   天上三奇 甲戊庚, 地下三奇 乙丙丁, 人中三奇 壬癸辛.
  * 仅标日柱.
  */
-import type { Gan } from "../types.ts";
+import type { Gan } from "@/types";
 import { type ShenshaCheck } from "./common.ts";
 
 const SAN_QI_TRIPLES: readonly (readonly [Gan, Gan, Gan])[] = [

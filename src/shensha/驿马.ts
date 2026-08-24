@@ -1,6 +1,5 @@
 /** 驿马 (三合局; 年支或日支起). */
-import { triadOf, TRIAD_MAP } from "./common.ts";
-import { pillarAt, type ShenshaCheck } from "./common.ts";
+import { triadOf, TRIAD_MAP, pillarAt, type ShenshaCheck } from "./common.ts";
 
 const NAME = "驿马";
 

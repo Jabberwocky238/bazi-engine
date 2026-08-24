@@ -5,9 +5,7 @@
  *   金木午卯合, 水火鸡犬(酉戌)多, 土命逢辰巳.
  * 仅落 日柱 / 时柱.
  */
-import { seasonOf } from "./common.ts";
-import { nayinOf } from "./common.ts";
-import { pillarAt, type ShenshaCheck } from "./common.ts";
+import { seasonOf, nayinOf, pillarAt, type ShenshaCheck } from "./common.ts";
 
 const check: ShenshaCheck = (pillars, i) => {
   if (i !== 2 && i !== 3) return false;

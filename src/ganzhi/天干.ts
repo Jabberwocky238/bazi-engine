@@ -1,5 +1,5 @@
-import { GAN, GanC, WuXingC, type Gan, type WuXing } from "../types.ts";
-import { createBitList } from "../bitmap.ts";
+import { GAN, GanC, WuXingC, type Gan, type WuXing } from "@/types";
+import { createBitList } from "@/bitmap";
 import { popcount, slotsToMask, slotIndex, type BitHit } from "./common.ts";
 
 // ———————————————————————————————————————————————
@@ -9,7 +9,7 @@ import { popcount, slotsToMask, slotIndex, type BitHit } from "./common.ts";
 // 判定只是 (盘 & 键) === 键. 三类关系皆两干相对, 故无 triple.
 
 /** 天干位表 (bit0..bit9, 位序同 GAN). */
-export const GAN_BITS = createBitList(GAN, 10);
+export const GAN_BITS = createBitList(GAN);
 /** 一组天干的位掩码. */
 export type GanMask = number;
 /** 把天干压成掩码. */
@@ -242,7 +242,7 @@ export function inferZhengHe(gans: readonly GanC[]): readonly ZhengHeHit[] {
 // 类 / 柱 / 干 一律用位表示, 故筛选皆是一次按位与, 不作字符串比较.
 
 /** 关系类位表 — 三类各占 1 bit. */
-export const TG_REL_BITS = createBitList(["相合", "相冲", "相克"] as const, 3);
+export const TG_REL_BITS = createBitList(["相合", "相冲", "相克"] as const);
 /** 一组关系类的位掩码. */
 export type TGRelMask = number;
 /** 把关系类压成掩码. */

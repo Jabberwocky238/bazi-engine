@@ -1,6 +1,5 @@
 /** 灾煞 (三合局; 仅以年支起, 不从日支). */
-import { triadOf, TRIAD_MAP } from "./common.ts";
-import { pillarAt, type ShenshaCheck } from "./common.ts";
+import { triadOf, TRIAD_MAP, pillarAt, type ShenshaCheck } from "./common.ts";
 
 const NAME = "灾煞";
 

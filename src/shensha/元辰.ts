@@ -4,7 +4,7 @@
  *   阴男 / 阳女 → 年支 + 5
  * 年柱不标.
  */
-import { GAN } from "../types.ts";
+import { GAN } from "@/types";
 import { pillarAt, zhiOffset, type ShenshaCheck } from "./common.ts";
 
 const OFFSET_YANG_MALE_YIN_FEMALE = 7;

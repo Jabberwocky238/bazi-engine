@@ -1,5 +1,5 @@
 /** 孤辰 (年支 → 地支). 亥子丑年见寅, 寅卯辰年见巳, 巳午未年见申, 申酉戌年见亥. */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const GU_CHEN: Readonly<Record<Zhi, Zhi>> = {

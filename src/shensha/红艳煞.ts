@@ -3,7 +3,7 @@
  * 口诀: 多情多欲少人知, 六丙逢寅辛见鸡; 癸临申上丁见未,
  *       甲乙午申庚见戌; 戊己怕辰壬怕子.
  */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const HONG_YAN: Readonly<Record<Gan, Zhi>> = {

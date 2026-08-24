@@ -13,8 +13,8 @@
  *   默认:
  *     - 墓气未透 → 闭库
  */
-import { GAN, ZHI, GANZHI_BITS, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "../types.ts";
-import { createTable, createBitList, type Table } from "../bitmap.ts";
+import { GAN, ZHI, GANZHI_BITS, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "@/types";
+import { createTable, createBitList, type Table } from "@/bitmap";
 
 // ———————————————————————————————————————————————
 // 状态类型
@@ -38,7 +38,6 @@ export type MuKuState =
 /** 状态标志位 (bit0..bit4). */
 export const MUKU_FLAG_BITS = createBitList(
   ["透墓气", "被冲", "被刑", "天干冲开", "天干合闭"] as const,
-  5,
 );
 
 /** 单个标志名. */

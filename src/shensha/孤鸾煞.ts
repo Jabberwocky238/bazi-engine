@@ -1,6 +1,5 @@
 /** 孤鸾煞 (日柱固定集合, 来自数据). */
-import type { GanZhi } from "./common.ts";
-import { gzOf, type ShenshaCheck } from "./common.ts";
+import { gzOf, type GanZhi, type ShenshaCheck } from "./common.ts";
 
 const GU_LUAN_DAYS: readonly GanZhi[] = [
   "乙巳","丁巳","戊申","辛亥","壬子","甲寅","戊午","丙午",

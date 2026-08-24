@@ -1,5 +1,5 @@
 /** 天喜 (年支 → 地支). */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TIAN_XI: Readonly<Record<Zhi, Zhi>> = {

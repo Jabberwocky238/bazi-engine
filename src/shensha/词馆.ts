@@ -3,9 +3,8 @@
  * 命中柱支 = 对应临官位, 但不包含 "正词馆" 的 干支组合 (互斥).
  * 土随水派 (临官亥). 年柱不标.
  */
-import type { NayinWuxing, Zhi } from "./common.ts";
-import { nayinOf } from "./common.ts";
-import { gzOf, pillarAt, type ShenshaCheck } from "./common.ts";
+import { nayinOf, gzOf, pillarAt, type NayinWuxing, type Zhi, type ShenshaCheck } from "./common.ts";
+
 import { ZHENG_CI_GUAN_GZ } from "./正词馆.ts";
 
 const CI_GUAN_ZHI: Readonly<Record<NayinWuxing, Zhi>> = {

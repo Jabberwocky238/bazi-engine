@@ -15,15 +15,14 @@
  *   - 半三会 已废弃 (三会 仅 首+末 出拱会, 不产半会; pairwise 同步不产).
  *   - 暗合 与 半三合 / 六合 多义时无统一优先级, pairwise 不含暗合.
  */
-import { GanC, ZhiC, type Gan, type Pillar, type Zhi } from "../types.ts";
-import type { ExtraPillar } from "./common.ts";
+import { GanC, PillarC, ZhiC, type Gan, type Pillar, type Zhi } from "@/types";
 import {
   DiZhiDetector, HeHuiC, XPCHC, zhiMask,
   type DiZhiHit, type DiZhiRelKind, type HeHuiSubset,
 } from "./地支.ts";
 import { TianGanC, TianGanDetector, type TianGanHit, type ZhengHeHit } from "./天干.ts";
 import {
-  SuiYunC, 叠加地支岁运, 叠加天干岁运,
+  叠加地支岁运, 叠加天干岁运,
   type SuiYunHit,
 } from "./岁运引化.ts";
 import { detect as detectWholePillar, type WholePillarR } from "./整柱.ts";
@@ -66,32 +65,31 @@ export interface GanZhiAnalysis {
 }
 
 /** 送入 detector 的干支序列 —— 原局四柱在前, 岁运柱依次接后. */
-function seq(pillars: readonly Pillar[], extras: readonly ExtraPillar[]) {
+function seq(pillars: readonly Pillar[], extras: readonly PillarC[]) {
   const gans = [
     ...pillars.map((p) => GanC.from(p.gan)),
-    ...extras.map((e) => GanC.from(e.gan)),
+    ...extras.map((e) => e.gan),
   ];
   const zhis = [
     ...pillars.map((p) => ZhiC.from(p.zhi)),
-    ...extras.map((e) => ZhiC.from(e.zhi)),
+    ...extras.map((e) => e.zhi),
   ];
   return { gans, zhis };
 }
 
 export function analyzeGanZhi(
   pillars: Pillar[],
-  extras: ExtraPillar[] = [],
+  extras: PillarC[] = [],
 ): GanZhiAnalysis | null {
   if (pillars.length !== 4) return null;
   const { gans, zhis } = seq(pillars, extras);
-  const suiyun = extras.map(SuiYunC.fromExtra);
 
   const tg = TianGanDetector.detect(gans);
   const dz = DiZhiDetector.detect(zhis);
 
   return {
-    天干: 叠加天干岁运(tg.hits, suiyun),
-    地支: 叠加地支岁运(dz.hits, suiyun),
+    天干: 叠加天干岁运(tg.hits, extras),
+    地支: 叠加地支岁运(dz.hits, extras),
     子集: dz.subsets.map(({ sub, name, slots }) => ({ sub, name, slots })),
     争合: tg.zhenghe,
     整柱: pillars.map((p, slot) => ({ slot, state: detectWholePillar(p) })),

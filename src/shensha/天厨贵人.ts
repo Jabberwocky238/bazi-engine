@@ -2,7 +2,7 @@
  * 天厨贵人 (年干 或 日干 → 地支). 即 食神之禄:
  * 甲食神丙→丙禄巳; 丙食神戊→戊禄巳; 戊食神庚→庚禄申; ...
  */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TIAN_CHU: Readonly<Record<Gan, Zhi>> = {

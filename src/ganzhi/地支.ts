@@ -1,5 +1,5 @@
-import { ZHI, GanC, WuXingC, ZhiC, type Gan, type WuXing, type Zhi } from "../types.ts";
-import { createBitList } from "../bitmap.ts";
+import { ZHI, GanC, WuXingC, ZhiC, type Gan, type WuXing, type Zhi } from "@/types";
+import { createBitList } from "@/bitmap";
 import {
   popcount, slotsToMask, slotIndex, inferBitHits,
   type BitHit,
@@ -12,7 +12,7 @@ import {
 // 故不设规则表 —— 掩码即键, C 即值, 判定只是 (盘 & 键) === 键.
 
 /** 地支位表 (bit0..bit11, 位序同 ZHI). */
-export const ZHI_BITS = createBitList(ZHI, 12);
+export const ZHI_BITS = createBitList(ZHI);
 /** 一组地支的位掩码. */
 export type ZhiMask = number;
 /** 把地支压成掩码. */
@@ -420,7 +420,6 @@ export type DiZhiRelKind = XPCHKind | HeHuiKind;
 /** 关系类位表 — 八类各占 1 bit (bit0..bit7). */
 export const REL_BITS = createBitList(
   ["相刑", "相破", "相冲", "相害", "六合", "三合", "三会", "暗合"] as const,
-  8,
 );
 /** 一组关系类的位掩码. */
 export type RelMask = number;
@@ -434,7 +433,7 @@ function relBit(kind: DiZhiRelKind): RelMask {
 }
 
 /** 族位表 — XPCH / 合会 各占 1 bit. */
-export const FAMILY_BITS = createBitList(["XPCH", "合会"] as const, 2);
+export const FAMILY_BITS = createBitList(["XPCH", "合会"] as const);
 /** 族名. */
 export type DiZhiFamily = (typeof FAMILY_BITS.items)[number];
 

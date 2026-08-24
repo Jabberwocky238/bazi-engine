@@ -1,5 +1,5 @@
 /** 寡宿 (年支 → 地支). 亥子丑年见戌, 寅卯辰年见丑, 巳午未年见辰, 申酉戌年见未. */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const GUA_SU: Readonly<Record<Zhi, Zhi>> = {

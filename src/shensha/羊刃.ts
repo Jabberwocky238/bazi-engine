@@ -1,5 +1,5 @@
 /** 羊刃 (日干 → 地支): 阳干禄后一位, 阴干禄前一位. */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const YANG_REN: Readonly<Record<Gan, Zhi>> = {

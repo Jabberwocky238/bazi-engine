@@ -8,7 +8,8 @@
  * Both API and our findings are bucketed into coarse categories keyed by
  * canonical (sorted) pair/triple identifiers, then set-compared per sample.
  * Categories align with the API short-type vocabulary:
- *   合 / 半合 / 拱合 / 拱会 / 三合 / 三会 / 暗合 / 暗三会
+ *   合 / 半合 / 拱合 / 拱会 / 三合 / 三会 / 暗合
+ *   (API 的 暗三合 / 暗三会 归并入 拱合 / 拱会)
  *   克 / 冲 / 刑 / 害 / 破
  * 墓库 / 绝 are ours-only, excluded from extra counting.
  */
@@ -83,8 +84,10 @@ function apiCat(short: string): string | null {
   if (short.startsWith("三合")) return "三合";
   if (short.startsWith("三会")) return "三会";
   if (short === "暗合") return "暗合";
-  if (short === "暗三会") return "暗三会";
-  if (short === "暗三合") return "暗三合";
+  // API 的 "暗三合" / "暗三会" 即本引擎的 拱合 / 拱会 (两支拱出所缺的第三支,
+  // 需相应天干引化): 同一现象的两种叫法, 归并到同一分类后才能集合比较.
+  if (short === "暗三合") return "拱合";
+  if (short === "暗三会") return "拱会";
   if (short === "自刑") return "刑";              // 合并到 刑
   if (short === "三刑") return "刑";              // 三刑 triple 归并
   if (short === "克" || short === "刑" || short === "害" || short === "破") return short;

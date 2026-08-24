@@ -1,8 +1,12 @@
-import { GAN_WUXING, type ChangSheng, type Pillar } from "./types";
-import { PILLAR_LABELS, type PillarType } from "./ganzhi";
-import { computeShensha, type Shensha } from "./shensha";
-import { type Shishen, type ShishenCat, shishenOf, ShishenC, ShishenCC } from "./shishen";
-import { GanC, PillarC, WuXingC, type BaziInput, type Gan, type Sex, type ZhiC } from "./types";
+import { computeShensha, type Shensha } from "@/shensha";
+import {
+    analyzeGanZhi, detect as detectWholePillar, pairwiseGan, pairwiseZhi,
+    type DiZhiHit, type GanZhiAnalysis, type PairGan, type PairZhi,
+    DiZhiDetector, TianGanDetector,
+    type SuiYunHit, type TianGanHit, type WholePillarHit, type WholePillarR, type ZhengHeHit,
+} from "@/ganzhi";
+import { type Shishen, type ShishenCat, shishenOf, ShishenC, ShishenCC } from "@/shishen";
+import { BaziInputC, GAN_WUXING, GanC, PillarC, WuXingC, type ChangSheng, type Pillar, type Sex, type ZhiC } from "@/types";
 
 export interface ICalculator {
     touGan(): GanC[]
@@ -33,45 +37,72 @@ export interface IShishenCalculator {
     adjacentTou(ss1: ShishenC, ss2: ShishenC): boolean // 两个十神是否在相邻柱天干紧贴（差 1）
 }
 
+/** 干支关系 (合冲刑害 / 整柱 / 岁运引化) 的查询入口. */
+export interface IGanZhiCalculator {
+    /** 全量分析: 四柱 + 可选岁运柱, 天干/地支/子集/争合/整柱 一并给出. */
+    analyze(extras?: PillarC[]): GanZhiAnalysis | null
+    /** 天干关系 (相合 / 相冲 / 相克), 各带岁运作用. */
+    gan(extras?: PillarC[]): readonly SuiYunHit<TianGanHit>[]
+    /** 地支关系 (八类), 各带岁运作用. */
+    zhi(extras?: PillarC[]): readonly SuiYunHit<DiZhiHit>[]
+    /** 三合/三会 的两支子集 (半合 / 拱合 / 拱会). */
+    subsets(extras?: PillarC[]): GanZhiAnalysis["子集"]
+    /** 争合 (五合一方重出). */
+    zhengHe(extras?: PillarC[]): readonly ZhengHeHit[]
+    /** 各柱整柱作用 (盖头 / 截脚 / 覆载 三态), 仅原局四柱. */
+    wholePillar(): readonly WholePillarHit[]
+    /** 指定柱的整柱作用; slot 0=年 1=月 2=日 3=时. */
+    wholePillarAt(slot: number): WholePillarR | undefined
+    /**
+     * 天干 detector (原局四柱 + 岁运柱 依次入列, 岁运柱下标从 4 起).
+     * 用于取原始命中 / 掩码等 detector 级信息.
+     */
+    ganDetector(extras?: PillarC[]): TianGanDetector
+    /** 地支 detector, 入列规则同 {@link ganDetector}. */
+    zhiDetector(extras?: PillarC[]): DiZhiDetector
+    /** 两支查表 (六合/六冲/六害/六破/刑/半合). */
+    pairZhi(a: ZhiC, b: ZhiC): PairZhi | null
+    /** 两干查表 (相合 优先, 其次 相克). */
+    pairGan(a: GanC, b: GanC): PairGan | null
+}
+
 export interface DetailedPillar {
-    label: PillarType
-    gan: {
-        name: GanC
-        isRizhu: boolean
-    }
-    zhi: ZhiC
-    nayin: string
+    /** 干支本体; 柱位标签与纳音从它取 (pillarType / nayinName()). */
+    pillar: PillarC
+    /** 整盘 + 性别推出的神煞. */
     shensha: Shensha[]
+    /** 日干 vs 本柱地支的十二长生 (非本柱干支对). */
     changsheng: ChangSheng
+    /** 是否日柱 (整盘位置). */
+    isRizhu: boolean
 }
 
 export class Calculator implements ICalculator {
-    private fourRawPillars: [Pillar, Pillar, Pillar, Pillar | undefined]
-    private fourPillars: [PillarC, PillarC, PillarC, PillarC | undefined]
-    private mustPillars: PillarC[]
-    private sex: Sex
-
     constructor(
-        public bazi: BaziInput,
-    ) {
-        this.sex = bazi.sex
-        this.fourRawPillars = [
-            this.bazi.year,
-            this.bazi.month,
-            this.bazi.day,
-            this.bazi.hour
-        ]
-        this.fourPillars = [
-            PillarC.fromPillar(this.bazi.year),
-            PillarC.fromPillar(this.bazi.month),
-            PillarC.fromPillar(this.bazi.day),
-            this.bazi.hour ? PillarC.fromPillar(this.bazi.hour) : undefined
-        ]
-        this.mustPillars = this.fourPillars.filter((p): p is PillarC => !!p)
+        public bazi: BaziInputC,
+    ) { }
+
+    /** 四柱原位序列, 时柱可缺. 随 bazi 实时求值. */
+    private get fourPillars(): [PillarC, PillarC, PillarC, PillarC | undefined] {
+        return [this.bazi.year, this.bazi.month, this.bazi.day, this.bazi.hour]
     }
 
+    /** 四柱的字面量形式, 供仍吃裸 Pillar 的神煞链使用. */
+    private get fourRawPillars(): [Pillar, Pillar, Pillar, Pillar | undefined] {
+        return this.fourPillars.map(
+            (p) => p && { gan: p.gan.str, zhi: p.zhi.str }
+        ) as [Pillar, Pillar, Pillar, Pillar | undefined]
+    }
+
+    /** 已滤掉缺失时柱的柱序列. */
+    private get mustPillars(): PillarC[] {
+        return this.fourPillars.filter((p): p is PillarC => !!p)
+    }
+
+    private get sex(): Sex { return this.bazi.sex }
+
     /** 日主天干。 */
-    get dayGan(): Gan { return this.bazi.day.gan }
+    get dayGan(): GanC { return this.bazi.day.gan }
 
     /**
      * 透干柱索引 —— 年/月/时三柱 (排除日柱: 日主自身不计"透").
@@ -91,25 +122,23 @@ export class Calculator implements ICalculator {
             this.sex,
         )
         const realshensha = [shensha.year, shensha.month, shensha.day, shensha.hour]
-        const rizhu = this.bazi.day.gan as Gan
-        const dayGan = GanC.from(rizhu)
+        const dayGan = this.bazi.day.gan
         return this.fourPillars.filter((p): p is PillarC => !!p).map((p, i): DetailedPillar => {
             return {
-                label: PILLAR_LABELS[i]!,
-                gan: {
-                    name: p.gan,
-                    isRizhu: i === 2,
-                },
-                zhi: p.zhi,
-                nayin: p.nayinName(),
+                pillar: p,
                 shensha: realshensha[i] ? realshensha[i]! : [],
                 changsheng: PillarC.from(dayGan, p.zhi).changsheng(),
+                isRizhu: i === 2,
             }
         })
     }
 
     shishen(): ShishenCalculator {
         return new ShishenCalculator(this)
+    }
+
+    ganzhi(): GanZhiCalculator {
+        return new GanZhiCalculator(this)
     }
 
     // ———————————————————————————————————————————————
@@ -237,12 +266,12 @@ export class ShishenCalculator implements IShishenCalculator {
     ) { }
 
     private pillars(): DetailedPillar[] { return this.calculator.pillars() }
-    private get dayGan(): GanC { return GanC.from(this.calculator.dayGan) }
+    private get dayGan(): GanC { return this.calculator.dayGan }
     private ganShishen(p: DetailedPillar): ShishenC | undefined {
-        return p.gan.isRizhu ? undefined : shishenOf(this.dayGan, p.gan.name)
+        return p.isRizhu ? undefined : shishenOf(this.dayGan, p.pillar.gan)
     }
     private zhiShishen(p: DetailedPillar): ShishenC[] {
-        return p.zhi.canggan().map((gan) => shishenOf(this.dayGan, gan))
+        return p.pillar.zhi.canggan().map((gan) => shishenOf(this.dayGan, gan))
     }
 
     // ———————————————————————————————————————————————
@@ -387,5 +416,76 @@ export class ShishenCalculator implements IShishenCalculator {
             this.zhiShishen(p).forEach((value) => rec[value.cat.str]++)
         })
         return rec
+    }
+}
+
+/** 干支关系计算器 —— 委托 ./ganzhi 的 detector, 四柱由 Calculator 提供. */
+export class GanZhiCalculator implements IGanZhiCalculator {
+    constructor(
+        private calculator: Calculator,
+    ) { }
+
+    /** 原局柱 (C 形式); 时辰未知时只有三柱. */
+    private get originPillars(): PillarC[] {
+        return this.calculator.pillars().map((p) => p.pillar)
+    }
+
+    /** 原局四柱的字面量形式; 时辰未知时不足四柱, analyzeGanZhi 会返回 null. */
+    private get rawPillars(): Pillar[] {
+        return this.calculator.pillars().map((p) => ({
+            gan: p.pillar.gan.str,
+            zhi: p.pillar.zhi.str,
+        }))
+    }
+
+    analyze(extras: PillarC[] = []): GanZhiAnalysis | null {
+        return analyzeGanZhi(this.rawPillars, extras)
+    }
+
+    gan(extras: PillarC[] = []): readonly SuiYunHit<TianGanHit>[] {
+        return this.analyze(extras)?.天干 ?? []
+    }
+
+    zhi(extras: PillarC[] = []): readonly SuiYunHit<DiZhiHit>[] {
+        return this.analyze(extras)?.地支 ?? []
+    }
+
+    subsets(extras: PillarC[] = []): GanZhiAnalysis["子集"] {
+        return this.analyze(extras)?.子集 ?? []
+    }
+
+    zhengHe(extras: PillarC[] = []): readonly ZhengHeHit[] {
+        return this.analyze(extras)?.争合 ?? []
+    }
+
+    wholePillar(): readonly WholePillarHit[] {
+        return this.rawPillars.map((p, slot) => ({ slot, state: detectWholePillar(p) }))
+    }
+
+    wholePillarAt(slot: number): WholePillarR | undefined {
+        const p = this.rawPillars[slot]
+        return p && detectWholePillar(p)
+    }
+
+    ganDetector(extras: PillarC[] = []): TianGanDetector {
+        return TianGanDetector.detect([
+            ...this.originPillars.map((p) => p.gan),
+            ...extras.map((p) => p.gan),
+        ])
+    }
+
+    zhiDetector(extras: PillarC[] = []): DiZhiDetector {
+        return DiZhiDetector.detect([
+            ...this.originPillars.map((p) => p.zhi),
+            ...extras.map((p) => p.zhi),
+        ])
+    }
+
+    pairZhi(a: ZhiC, b: ZhiC): PairZhi | null {
+        return pairwiseZhi(a.str, b.str)
+    }
+
+    pairGan(a: GanC, b: GanC): PairGan | null {
+        return pairwiseGan(a.str, b.str)
     }
 }

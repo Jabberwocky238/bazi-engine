@@ -2,9 +2,10 @@
  * 神煞判定共享类型与极小工具. 不放任何查表 const —
  * 每个神煞自己的数据在各自的文件里.
  */
-import { type Gan, type Sex, type Zhi, type Season, type TriadKey, type WuXing, type Pillar, ZHI } from "../types.ts";
-import { KONGWANG_XUN } from "../types.ts";
+import { ZHI, KONGWANG_XUN, type Gan, type Sex, type Zhi, type Season, type TriadKey, type WuXing, type Pillar } from "@/types";
+
 import { LunarUtil } from "lunar-typescript";
+import { BaziEngineError } from "@/error";
 
 export type GanZhi = `${Gan}${Zhi}`;
 export type NayinWuxing = WuXing;
@@ -27,18 +28,18 @@ export function seasonOf(z: Zhi): Season {
   if ("巳午未".includes(z)) return "夏";
   if ("申酉戌".includes(z)) return "秋";
   if ("亥子丑".includes(z)) return "冬";
-  throw new Error(`invalid month zhi ${z}`);
+  throw new BaziEngineError(`invalid month zhi ${z}`);
 }
 export function nayinOf(gan: Gan, zhi: Zhi): NayinWuxing {
   const name = LunarUtil.NAYIN[`${gan}${zhi}`];
-  if (!name) throw new Error(`invalid ganzhi ${gan}${zhi}`);
+  if (!name) throw new BaziEngineError(`invalid ganzhi ${gan}${zhi}`);
   return name.charAt(name.length - 1) as WuXing;
 }
 export function kongwangFor(gan: Gan, zhi: Zhi): readonly [Zhi, Zhi] {
   const g = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"].indexOf(gan);
   const z = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"].indexOf(zhi);
   for (let n = 0; n < 60; n++) if (n % 10 === g && n % 12 === z) return KONGWANG_XUN[Math.floor(n / 10)]!;
-  throw new Error(`invalid pillar ${gan}${zhi}`);
+  throw new BaziEngineError(`invalid pillar ${gan}${zhi}`);
 }
 
 export type PillarIndex = 0 | 1 | 2 | 3;

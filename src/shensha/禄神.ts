@@ -1,5 +1,5 @@
 /** 禄神 (日干 → 地支). */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const LU: Readonly<Record<Gan, Zhi>> = {

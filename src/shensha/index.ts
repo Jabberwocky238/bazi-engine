@@ -2,12 +2,9 @@
  * 神煞计算入口. 每个神煞的数据 + 判定封装在同目录下同名文件里;
  * 本文件只负责 (a) 注册表 (b) 批量计算 computeShensha (c) 导出 API.
  */
-import type { Gan, Sex, Zhi } from "../types.ts";
-import type { Pillar } from "./common.ts";
-import { GAN, ZHI } from "../types.ts";
-import {
-  type PillarIndex, type ShenshaCheck, type ShenshaPillars,
-} from "./common.ts";
+import { BaziEngineError } from "@/error";
+import { GAN, ZHI, type Gan, type Sex, type Zhi } from "@/types";
+import { type Pillar, type PillarIndex, type ShenshaCheck, type ShenshaPillars } from "./common.ts";
 
 export type { PillarIndex, ShenshaCheck, ShenshaDef } from "./common.ts";
 
@@ -119,8 +116,8 @@ function validate(pillars: ShenshaPillars): void {
   for (let i = 0; i < 4; i++) {
     const p = pillars[i];
     if (!p) continue;
-    if (!isGan(p.gan)) throw new Error(`${PILLAR_LABELS[i]}.gan invalid: ${p.gan}`);
-    if (!isZhi(p.zhi)) throw new Error(`${PILLAR_LABELS[i]}.zhi invalid: ${p.zhi}`);
+    if (!isGan(p.gan)) throw new BaziEngineError(`${PILLAR_LABELS[i]}.gan invalid: ${p.gan}`);
+    if (!isZhi(p.zhi)) throw new BaziEngineError(`${PILLAR_LABELS[i]}.zhi invalid: ${p.zhi}`);
   }
 }
 

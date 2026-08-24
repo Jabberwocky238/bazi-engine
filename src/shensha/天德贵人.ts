@@ -1,6 +1,6 @@
 /** 天德贵人 (月支 → 天干 或 地支). */
-import type { Gan, Zhi } from "../types.ts";
-import { GAN, ZHI } from "../types.ts";
+import { GAN, ZHI, type Gan, type Zhi } from "@/types";
+
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TIAN_DE: Readonly<Record<Zhi, Gan | Zhi>> = {

@@ -1,5 +1,5 @@
 /** 天乙贵人 (日干 或 年干 → 地支集合). */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TIAN_YI: Readonly<Record<Gan, readonly Zhi[]>> = {

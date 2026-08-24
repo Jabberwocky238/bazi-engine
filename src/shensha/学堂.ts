@@ -3,9 +3,8 @@
  * 命中柱支 = 对应长生位, 但不包含 "正学堂" 的 干支组合 (互斥).
  * 土随水派 (长生申). 年柱不标.
  */
-import type { NayinWuxing, Zhi } from "./common.ts";
-import { nayinOf } from "./common.ts";
-import { gzOf, pillarAt, type ShenshaCheck } from "./common.ts";
+import { nayinOf, gzOf, pillarAt, type NayinWuxing, type Zhi, type ShenshaCheck } from "./common.ts";
+
 import { ZHENG_XUE_TANG_GZ } from "./正学堂.ts";
 
 const XUE_TANG_ZHI: Readonly<Record<NayinWuxing, Zhi>> = {

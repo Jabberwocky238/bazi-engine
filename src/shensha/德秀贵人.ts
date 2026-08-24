@@ -1,7 +1,6 @@
 /** 德秀贵人 (月支三合 → 干集合, 数据拟合). */
-import type { Gan, TriadKey } from "../types.ts";
-import { triadOf } from "./common.ts";
-import { pillarAt, type ShenshaCheck } from "./common.ts";
+import type { Gan, TriadKey } from "@/types";
+import { triadOf, pillarAt, type ShenshaCheck } from "./common.ts";
 
 const DE_XIU: Readonly<Record<TriadKey, readonly Gan[]>> = {
   "寅午戌": ["丙","丁","戊","癸"],

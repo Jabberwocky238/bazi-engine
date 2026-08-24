@@ -1,6 +1,5 @@
 /** 阴差阳错 (日柱, 12 日). */
-import type { GanZhi } from "./common.ts";
-import { gzOf, type ShenshaCheck } from "./common.ts";
+import { gzOf, type GanZhi, type ShenshaCheck } from "./common.ts";
 
 const DAYS: readonly GanZhi[] = [
   "辛卯","壬辰","癸巳","丙午","丁未","戊申",

@@ -1,3 +1,5 @@
+import { BaziEngineError } from "@/error";
+
 type BuildTuple<
   Length extends number,
   Item,
@@ -22,12 +24,18 @@ type KeyedTensor<Value, Keys extends readonly (readonly PropertyKey[])[]> = Keys
 
 type TensorLeaf<T> = T extends readonly (infer Item)[] ? TensorLeaf<Item> : T;
 
-class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
-  public constructor(public readonly items: Items, public readonly length: BitLength) {
-    if (length < 0 || length > 31 || items.length > length) {
-      throw new RangeError("Invalid bit length");
+class BitList<Items extends readonly PropertyKey[]> {
+  public constructor(public readonly items: Items) {
+    // 每个元素占一位, 故位数即元素个数; 掩码用 32 位整数, 上限 31 位.
+    if (items.length > 31) {
+      throw new BaziEngineError(`Too many items for a bitmask: ${items.length}`);
     }
   }
+  /** 位数 = 元素个数. */
+  public get length(): number {
+    return this.items.length;
+  }
+  /** 可表示的掩码总数 (2 ** 位数). */
   public get size(): number {
     return 2 ** this.length;
   }
@@ -42,7 +50,7 @@ class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
     let mask = 0;
     for (const item of items) {
       const bit = this.items.indexOf(item);
-      if (bit === -1) throw new RangeError(`Unknown item: ${String(item)}`);
+      if (bit === -1) throw new BaziEngineError(`Unknown item: ${String(item)}`);
       mask |= 1 << bit;
     }
     return mask;
@@ -63,8 +71,8 @@ function createTable<
   return build(table, 0) as KeyedTensor<TensorLeaf<T>, Keys>;
 }
 
-function createBitList<const Items extends readonly PropertyKey[], const Length extends number>(items: Items, length: Length): BitList<Items, Length> {
-  return new BitList(items, length);
+function createBitList<const Items extends readonly PropertyKey[]>(items: Items): BitList<Items> {
+  return new BitList(items);
 }
 
 export { createTable, createBitList }

@@ -2,7 +2,7 @@
  * 金舆 = 禄前二位 (年干 或 日干 → 地支).
  * 口诀: 甲龙乙蛇丙戊羊, 丁己猴歌庚犬方, 辛猪壬牛癸逢虎.
  */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const JIN_YU: Readonly<Record<Gan, Zhi>> = {

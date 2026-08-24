@@ -3,7 +3,7 @@
  * 口诀: 甲乙生人子午中, 丙丁鸡兔(卯酉)定亨通; 戊己两干临四季(辰戌丑未),
  *       庚辛寅亥禄丰隆; 壬癸巳申偏喜美.
  */
-import type { Gan, Zhi } from "../types.ts";
+import type { Gan, Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TAI_JI: Readonly<Record<Gan, readonly Zhi[]>> = {

@@ -16,36 +16,13 @@
  *
  * 一个岁运柱对一条关系最多产生一条记录: 逐成员试, 首个命中即止 (同旧实现的 break).
  */
-import { GanC, ZhiC, type Gan, type Zhi } from "../types.ts";
+import { GanC, PillarC, ZhiC } from "@/types";
 import { XPCHC, HeHuiC, zhiMask, type DiZhiHit, type DiZhiRelKind, type ZhiMask } from "./地支.ts";
 import { TianGanC, type TianGanHit } from "./天干.ts";
-import type { ExtraPillar, PillarType } from "./common.ts";
 
 // ———————————————————————————————————————————————
 // 岁运柱
 // ———————————————————————————————————————————————
-
-/** 岁运柱 —— C 化的 ExtraPillar. */
-export class SuiYunC {
-  private constructor(
-    public readonly label: PillarType,
-    public readonly gan: GanC,
-    public readonly zhi: ZhiC,
-  ) { }
-
-  static from(label: PillarType, gan: Gan | GanC, zhi: Zhi | ZhiC): SuiYunC {
-    return new SuiYunC(
-      label,
-      typeof gan === "string" ? GanC.from(gan) : gan,
-      typeof zhi === "string" ? ZhiC.from(zhi) : zhi,
-    );
-  }
-
-  /** 由旧式 ExtraPillar 转入. */
-  static fromExtra(e: ExtraPillar): SuiYunC {
-    return SuiYunC.from(e.label, e.gan, e.zhi);
-  }
-}
 
 // ———————————————————————————————————————————————
 // 作用类型
@@ -59,7 +36,7 @@ export interface SuiYunMod {
   /** 何种作用. */
   readonly effect: SuiYunEffect;
   /** 由哪个岁运柱触发. */
-  readonly by: SuiYunC;
+  readonly by: PillarC;
   /** 经由哪条关系触发, 形如 "子丑合化土" / "子午相冲". */
   readonly via: string;
   /** 岁运与原局哪个成员成的关系. */
@@ -132,7 +109,7 @@ function firstHit<T>(
 /** 地支关系 + 岁运 → 作用记录. */
 export function 地支岁运作用(
   hit: DiZhiHit,
-  suiyun: readonly SuiYunC[],
+  suiyun: readonly PillarC[],
 ): readonly SuiYunMod[] {
   const out: SuiYunMod[] = [];
   const members = hit.zhis;
@@ -155,7 +132,7 @@ export function 地支岁运作用(
 /** 天干关系 + 岁运 → 作用记录. */
 export function 天干岁运作用(
   hit: TianGanHit,
-  suiyun: readonly SuiYunC[],
+  suiyun: readonly PillarC[],
 ): readonly SuiYunMod[] {
   const out: SuiYunMod[] = [];
   const members = hit.gans;
@@ -178,7 +155,7 @@ export function 天干岁运作用(
 /** 墓库冲开 —— 岁运支与库支 六冲. */
 export function 墓库冲开(
   muZhi: ZhiC,
-  suiyun: readonly SuiYunC[],
+  suiyun: readonly PillarC[],
 ): readonly SuiYunMod[] {
   const out: SuiYunMod[] = [];
   for (const sy of suiyun) {
@@ -212,7 +189,7 @@ const wrap = <H>(hit: H, mods: readonly SuiYunMod[]): SuiYunHit<H> => ({
 /** 给一批地支关系挂上岁运作用. */
 export function 叠加地支岁运(
   hits: readonly DiZhiHit[],
-  suiyun: readonly SuiYunC[],
+  suiyun: readonly PillarC[],
 ): readonly SuiYunHit<DiZhiHit>[] {
   return hits.map((h) => wrap(h, 地支岁运作用(h, suiyun)));
 }
@@ -220,7 +197,7 @@ export function 叠加地支岁运(
 /** 给一批天干关系挂上岁运作用. */
 export function 叠加天干岁运(
   hits: readonly TianGanHit[],
-  suiyun: readonly SuiYunC[],
+  suiyun: readonly PillarC[],
 ): readonly SuiYunHit<TianGanHit>[] {
   return hits.map((h) => wrap(h, 天干岁运作用(h, suiyun)));
 }

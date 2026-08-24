@@ -9,7 +9,8 @@
  */
 
 import { ShouXingUtil, Solar } from "lunar-typescript";
-import { BaziInputC, type BaziInput, type Gan, type Sex, type Zhi } from "./types.ts";
+import { BaziInputC, PillarC, type Gan, type Sex, type Zhi } from "@/types";
+import { BaziEngineError } from "@/error";
 
 /** 构造参数: 经度 (东经为正) + 该钟表所用时区偏移 (小时, 东为正). 两者均可省略. */
 export interface SolarTimeOptions {
@@ -54,15 +55,15 @@ export class SolarTime {
      */
     constructor(date: Date, opts: SolarTimeOptions = {}) {
         if (Number.isNaN(date.getTime())) {
-            throw new RangeError("SolarTime: invalid date");
+            throw new BaziEngineError("SolarTime: invalid date");
         }
         const lon = opts.longitude ?? SolarTime.DEFAULT_LONGITUDE;
         if (!Number.isFinite(lon) || Math.abs(lon) > 180) {
-            throw new RangeError(`SolarTime: invalid longitude ${opts.longitude}`);
+            throw new BaziEngineError(`SolarTime: invalid longitude ${opts.longitude}`);
         }
         const tz = opts.tzOffset ?? SolarTime.defaultTzOffset(lon);
         if (!Number.isFinite(tz) || Math.abs(tz) > 14) {
-            throw new RangeError(`SolarTime: invalid tzOffset ${tz}`);
+            throw new BaziEngineError(`SolarTime: invalid tzOffset ${tz}`);
         }
         this.utcMs = date.getTime();
         this.tzOffsetMs = tz * SolarTime.HOUR_MS;
@@ -153,7 +154,11 @@ export class SolarTime {
         return Math.floor((((h + 1) % 24) * 3600 + m * 60 + s) / 7200) % 12;
     }
 
-    /** 真太阳时是否已跨入次日子时 (即钟表 23 点后). */
+    /**
+     * 真太阳时是否处于夜子时 (子时的前半, 真太阳时 23:00-23:59).
+     * 与之相对的早子时为次日 00:00-00:59; 两者 {@link zhiIndex} 同为子.
+     * 夜子时是否算作次日, 属流派差异, 由调用方决定.
+     */
     get isLateZi(): boolean {
         return this.trueSolarTime.getUTCHours() === 23;
     }
@@ -174,7 +179,7 @@ export class SolarTime {
     private shift(delta: SolarTimeDelta, sign: 1 | -1): SolarTime {
         const { years = 0, months = 0, days = 0, hours = 0, minutes = 0, seconds = 0 } = delta;
         if (!Number.isInteger(years) || !Number.isInteger(months)) {
-            throw new RangeError("SolarTime: years/months must be integers");
+            throw new BaziEngineError("SolarTime: years/months must be integers");
         }
         const tz = this.tzOffsetMs / SolarTime.HOUR_MS;
 
@@ -207,11 +212,8 @@ export class SolarTime {
      * 按真太阳时排出四柱干支.
      * @param sex 1 = 男, 0 = 女
      * @param hourKnown 时辰是否已知; false 时不产时柱
-     * @param raw true 则返回字符串字面量形式的 BaziInput, 默认返回 C 化的 BaziInputC
      */
-    toBazi(sex: Sex, hourKnown?: boolean): BaziInputC;
-    toBazi(sex: Sex, hourKnown: boolean, raw: true): BaziInput;
-    toBazi(sex: Sex, hourKnown = true, raw = false): BaziInputC | BaziInput {
+    toBazi(sex: Sex, hourKnown = true): BaziInputC {
         const p = this.trueSolarParts;
         const solar = Solar.fromYmdHms(
             p.year, p.month, p.day,
@@ -221,16 +223,15 @@ export class SolarTime {
         );
         const ec = solar.getLunar().getEightChar();
         ec.setSect(1);
-        const bazi: BaziInput = {
-            year: { gan: ec.getYearGan() as Gan, zhi: ec.getYearZhi() as Zhi },
-            month: { gan: ec.getMonthGan() as Gan, zhi: ec.getMonthZhi() as Zhi },
-            day: { gan: ec.getDayGan() as Gan, zhi: ec.getDayZhi() as Zhi },
-            hour: hourKnown
-                ? { gan: ec.getTimeGan() as Gan, zhi: ec.getTimeZhi() as Zhi }
+        return new BaziInputC(
+            PillarC.from(ec.getYearGan() as Gan, ec.getYearZhi() as Zhi, "年柱"),
+            PillarC.from(ec.getMonthGan() as Gan, ec.getMonthZhi() as Zhi, "月柱"),
+            PillarC.from(ec.getDayGan() as Gan, ec.getDayZhi() as Zhi, "日柱"),
+            hourKnown
+                ? PillarC.from(ec.getTimeGan() as Gan, ec.getTimeZhi() as Zhi, "时柱")
                 : undefined,
             sex,
-        };
-        return raw ? bazi : BaziInputC.from(bazi);
+        );
     }
 
     toString(): string {

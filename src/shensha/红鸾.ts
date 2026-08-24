@@ -1,5 +1,5 @@
 /** 红鸾 (年支 → 地支). */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const HONG_LUAN: Readonly<Record<Zhi, Zhi>> = {

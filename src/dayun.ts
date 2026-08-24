@@ -21,7 +21,7 @@ import {
   type LiuNian as RawLiuNian,
   type Yun as RawYun,
 } from "lunar-typescript";
-import type { Gan, Sex, Zhi } from "./types.ts";
+import type { Gan, Sex, Zhi } from "@/types";
 
 function parseGz(raw: string): [Gan, Zhi] | null {
   if (!raw || raw.length !== 2) return null;

@@ -6,7 +6,8 @@
  */
 
 import { LunarUtil } from "lunar-typescript";
-import { createTable, createBitList, type Table } from "./bitmap.ts";
+import { createTable, createBitList, type Table } from "@/bitmap";
+import { BaziEngineError } from "@/error";
 export const WUXING = ["木", "火", "土", "金", "水"] as const;
 export type WuXing = typeof WUXING[number]
 export const GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
@@ -16,8 +17,8 @@ export type Zhi = typeof ZHI[number]
 export type Muku = Extract<Zhi, "辰" | "未" | "戌" | "丑">;
 export type Pillar = { gan: Gan, zhi: Zhi }
 
-/** 干支位表 — 10 干 + 12 支 = 22 位, 一个数即一组干支. */
-export const GANZHI_BITS = createBitList([...GAN, ...ZHI], 22);
+/** 干支位表 — 10 干 + 12 支 各占 1 bit, 一个数即一组干支的集合. */
+export const GANZHI_BITS = createBitList([...GAN, ...ZHI]);
 /** 一组干支的位掩码. */
 export type GanZhiMask = number;
 export type TriadKey = "申子辰" | "寅午戌" | "亥卯未" | "巳酉丑";
@@ -164,7 +165,7 @@ function changshengOf(gan: Gan, zhi: Zhi): ChangSheng {
 /** 月令 / 禄位 / 刃: 以月支和日干的十二长生状态推算目标地支. */
 function zhiByChangsheng(dayGan: Gan, state: ChangSheng): Zhi {
     const zhi = ZHI.find(z => changshengOf(dayGan, z) === state);
-    if (!zhi) throw new Error(`unreachable: no ${state} zhi for ${dayGan}`);
+    if (!zhi) throw new BaziEngineError(`unreachable: no ${state} zhi for ${dayGan}`);
     return zhi;
 }
 
@@ -196,7 +197,7 @@ export class TriadC {
         ][]
         const found = entries.find(([, zhi]) => zhi === value.str);
         if (!found) {
-            throw new Error(`${value.str} is not part of triad ${this.key}`);
+            throw new BaziEngineError(`${value.str} is not part of triad ${this.key}`);
         }
         return found[0];
     }
@@ -240,7 +241,7 @@ export class WuXingC {
     }
     gan(yang: boolean): GanC {
         const gans = Object.entries(GAN_WUXING).filter(([g, x]) => x === this.str).map(([g]) => g as Gan);
-        if (gans.length !== 2) throw new Error(`unreachable: wuxingGan(${this.str}, ${yang})`);
+        if (gans.length !== 2) throw new BaziEngineError(`unreachable: wuxingGan(${this.str}, ${yang})`);
         const ret = gans.find(g => (GAN_WUXING[g] === this.str) && ((GAN.indexOf(g) % 2 === 0) === yang))!;
         return GanC.from(ret)
     }
@@ -262,8 +263,11 @@ export class GanC {
         癸: new GanC("癸"),
     } satisfies Record<Gan, GanC>;
 
+    /** 由天干字面量取 GanC; 非十干则抛 RangeError. */
     static from(str: Gan): GanC {
-        return GanC.map[str];
+        const ret = GanC.map[str];
+        if (!ret) throw new BaziEngineError(`invalid gan "${str}"`);
+        return ret;
     }
     /** 在 GAN 中的索引 (0 = 甲 ... 9 = 癸). */
     get index(): number {
@@ -292,8 +296,11 @@ export class ZhiC {
         亥: new ZhiC("亥"),
     } satisfies Record<Zhi, ZhiC>;
 
+    /** 由地支字面量取 ZhiC; 非十二支则抛 RangeError. */
     static from(str: Zhi): ZhiC {
-        return ZhiC.map[str];
+        const ret = ZhiC.map[str];
+        if (!ret) throw new BaziEngineError(`invalid zhi "${str}"`);
+        return ret;
     }
     get wuxing(): WuXingC {
         return WuXingC.from(ZHI_WUXING[this.str])
@@ -304,7 +311,7 @@ export class ZhiC {
         if ("巳午未".includes(this.str)) return SeasonC.from("夏");
         if ("申酉戌".includes(this.str)) return SeasonC.from("秋");
         if ("亥子丑".includes(this.str)) return SeasonC.from("冬");
-        throw new Error(`unreachable: seasonOf(${this.str})`);
+        throw new BaziEngineError(`unreachable: seasonOf(${this.str})`);
     }
     triad(): TriadC {
         const ret = () => {
@@ -355,29 +362,37 @@ export class MukuC {
     }
 }
 
+/** 柱位标签 — 四主柱 + 岁运柱. */
+export const PILLAR_LABELS = ['年柱', '月柱', '日柱', '时柱', '大运', '流年', '流月', '流日', '流时'] as const
+export type PillarType = typeof PILLAR_LABELS[number]
+/** 原局四柱的标签; 其余标签 (大运/流年/...) 属岁运柱. */
+export const ORIGIN_PILLAR_LABELS = ['年柱', '月柱', '日柱', '时柱'] as const
+export type OriginPillarType = typeof ORIGIN_PILLAR_LABELS[number]
+
 export class PillarC {
     constructor(
         public readonly gan: GanC,
         public readonly zhi: ZhiC,
+        /** 柱位标签; 脱离八字单独使用的柱为 null. */
+        public pillarType: PillarType | null = null,
     ) { }
     
-    static from(gan: Gan, zhi: Zhi): PillarC;
-    static from(gan: GanC, zhi: ZhiC): PillarC;
-    static from(gan: GanC | Gan, zhi: ZhiC | Zhi): PillarC {
+    static from(gan: Gan, zhi: Zhi, pillarType?: PillarType | null): PillarC;
+    static from(gan: GanC, zhi: ZhiC, pillarType?: PillarType | null): PillarC;
+    static from(gan: GanC | Gan, zhi: ZhiC | Zhi, pillarType: PillarType | null = null): PillarC {
         if (typeof gan === "string" && typeof zhi === "string") {
-            return new PillarC(GanC.from(gan), ZhiC.from(zhi))
+            return new PillarC(GanC.from(gan), ZhiC.from(zhi), pillarType)
         }
-
-        return new PillarC(gan as GanC, zhi as ZhiC)
+        return new PillarC(gan as GanC, zhi as ZhiC, pillarType)
     }
-    static fromPillar(pillar: Pillar): PillarC {
-        return PillarC.from(pillar.gan as Gan, pillar.zhi as Zhi)
+    static fromPillar(pillar: Pillar, pillarType: PillarType | null = null): PillarC {
+        return PillarC.from(pillar.gan as Gan, pillar.zhi as Zhi, pillarType)
     }
 
     /** 本柱干支对应的完整纳音名 (如 甲子 => "海中金"). */
     nayinName(): string {
         const name = LunarUtil.NAYIN[`${this.gan.str}${this.zhi.str}`];
-        if (!name) throw new Error(`invalid ganzhi ${this.gan.str}${this.zhi.str}`);
+        if (!name) throw new BaziEngineError(`invalid ganzhi ${this.gan.str}${this.zhi.str}`);
         return name;
     }
 
@@ -386,7 +401,7 @@ export class PillarC {
         const name = this.nayinName();
         const wx = name.charAt(name.length - 1);
         if (wx !== "金" && wx !== "木" && wx !== "水" && wx !== "火" && wx !== "土") {
-            throw new Error(`unexpected nayin ${name}`);
+            throw new BaziEngineError(`unexpected nayin ${name}`);
         }
         return WuXingC.from(wx);
     }
@@ -397,11 +412,20 @@ export class PillarC {
         for (let n = 0; n < 60; n++) {
             if (n % 10 === g && n % 12 === z) {
                 const row = KONGWANG_XUN[Math.floor(n / 10)];
-                if (!row) throw new Error(`kongwang table miss at xun ${Math.floor(n / 10)}`);
+                if (!row) throw new BaziEngineError(`kongwang table miss at xun ${Math.floor(n / 10)}`);
                 return [ZhiC.from(row[0]), ZhiC.from(row[1])];
             }
         }
-        throw new Error(`invalid pillar ${this.gan.str}${this.zhi.str}`);
+        throw new BaziEngineError(`invalid pillar ${this.gan.str}${this.zhi.str}`);
+    }
+
+    /**
+     * 是否原局柱 (年/月/日/时). 大运 / 流年 等岁运柱为 false;
+     * pillarType 为 null (脱离八字的裸柱) 亦为 false.
+     */
+    get isOrigin(): boolean {
+        return this.pillarType !== null
+            && (ORIGIN_PILLAR_LABELS as readonly string[]).includes(this.pillarType);
     }
 
     /** 本柱干支的十二长生状态. */
@@ -416,24 +440,85 @@ export class PillarC {
 }
 
 /** C 化的八字输入: 四柱均为 PillarC. */
+/** BaziInputC 的四柱位. */
+export const BAZI_SLOTS = ["year", "month", "day", "hour"] as const;
+export type BaziSlot = typeof BAZI_SLOTS[number];
+
 export class BaziInputC {
   constructor(
-    public readonly year: PillarC,
-    public readonly month: PillarC,
-    public readonly day: PillarC,
-    public readonly hour: PillarC | undefined,
-    public readonly sex: Sex,
+    public year: PillarC,
+    public month: PillarC,
+    public day: PillarC,
+    public hour: PillarC | undefined,
+    public sex: Sex,
   ) { }
 
   /** BaziInput -> BaziInputC. */
   static from(bazi: BaziInput): BaziInputC {
     return new BaziInputC(
-      PillarC.fromPillar(bazi.year),
-      PillarC.fromPillar(bazi.month),
-      PillarC.fromPillar(bazi.day),
-      bazi.hour ? PillarC.fromPillar(bazi.hour) : undefined,
+      PillarC.fromPillar(bazi.year, "年柱"),
+      PillarC.fromPillar(bazi.month, "月柱"),
+      PillarC.fromPillar(bazi.day, "日柱"),
+      bazi.hour ? PillarC.fromPillar(bazi.hour, "时柱") : undefined,
       bazi.sex,
     );
+  }
+
+  /**
+   * 从八字字符串构造, 如 "庚午壬午辛亥乙未" 或 "庚午 壬午 辛亥 乙未".
+   * 必须是四柱八字 (8 个汉字, 空白字符忽略), 不接受时柱缺失;
+   * 时辰未知请用其它构造方式. 干支须为六十甲子之一, 否则抛 RangeError.
+   */
+  static fromString(bazi: string, sex: Sex): BaziInputC {
+    const chars = [...bazi.replace(/\s+/gu, "")];
+    if (chars.length !== 8) {
+      throw new BaziEngineError(
+        `BaziInputC: expect 8 chars (4 pillars), got ${chars.length} in "${bazi}"`,
+      );
+    }
+    const pillars: PillarC[] = [];
+    for (let i = 0; i < chars.length; i += 2) {
+      // 干支合法性由 GanC / ZhiC.from 校验 (非十干十二支即抛).
+      const gan = GanC.from(chars[i]! as Gan), zhi = ZhiC.from(chars[i + 1]! as Zhi);
+      // 六十甲子只有阳干配阳支 / 阴干配阴支, 如 "甲丑" 不存在.
+      if (gan.index % 2 !== zhi.index % 2) {
+        throw new BaziEngineError(`BaziInputC: "${gan.str}${zhi.str}" is not in the 60 ganzhi cycle`);
+      }
+      pillars.push(new PillarC(gan, zhi, PILLAR_LABELS[i / 2]!));
+    }
+    return new BaziInputC(pillars[0]!, pillars[1]!, pillars[2]!, pillars[3]!, sex);
+  }
+
+  /** 时柱是否已知. */
+  get hourKnown(): boolean {
+    return this.hour !== undefined;
+  }
+
+  /** 取指定柱位 (时柱可能为 undefined). */
+  pillar(slot: BaziSlot): PillarC | undefined {
+    return this[slot];
+  }
+
+  /**
+   * 原地替换指定柱位, 返回自身以便链式调用.
+   * hour 可传 undefined 表示时辰未知; 其余三柱必填.
+   *
+   * 注意: Calculator 在构造时缓存四柱, 已交给 Calculator 的实例
+   * 再改柱不会反映到该 Calculator, 需重新构造.
+   */
+  setPillar(slot: BaziSlot, pillar: PillarC | undefined): this {
+    if (slot !== "hour" && !pillar) {
+      throw new BaziEngineError(`BaziInputC: ${slot} pillar is required`);
+    }
+    if (slot === "hour") this.hour = pillar;
+    else this[slot] = pillar as PillarC;
+    return this;
+  }
+
+  /** 原地替换性别, 返回自身. */
+  setSex(sex: Sex): this {
+    this.sex = sex;
+    return this;
   }
 
   /** 目标地支对日干的十二长生状态. */

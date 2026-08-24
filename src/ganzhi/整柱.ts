@@ -30,8 +30,8 @@
  * 同气最稳、得载次之 (天干坐印)、得覆偏泄 (天干气泄). 皆归同一 kind,
  * 通过 sub 区分. 一柱内紧贴作用 —— close 恒为 true.
  */
-import { createTable, type Table } from "../bitmap.ts";
-import { GAN, ZHI, type Pillar } from "../types.ts";
+import { createTable, type Table } from "@/bitmap";
+import { GAN, ZHI, type Pillar } from "@/types";
 
 /** 覆载子态. */
 export type WholePillarR = "同气" | "得覆" | "得载" | "盖头" | "截脚";

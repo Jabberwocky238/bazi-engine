@@ -1,6 +1,5 @@
 /** 空亡 (以年柱和日柱起旬, 任一旬空支命中). */
-import { kongwangFor } from "./common.ts";
-import { pillarAt, type ShenshaCheck } from "./common.ts";
+import { kongwangFor, pillarAt, type ShenshaCheck } from "./common.ts";
 
 const check: ShenshaCheck = (pillars, i) => {
   const z = pillarAt(pillars, i).zhi;

@@ -1,7 +1,5 @@
 /** 四废日 (月支季节 → 日柱干支, 当令五行之绝地). */
-import type { GanZhi, Season } from "./common.ts";
-import { seasonOf } from "./common.ts";
-import { gzOf, type ShenshaCheck } from "./common.ts";
+import { seasonOf, gzOf, type GanZhi, type Season, type ShenshaCheck } from "./common.ts";
 
 const DAYS: Readonly<Record<Season, readonly GanZhi[]>> = {
   春: ["庚申","辛酉"],

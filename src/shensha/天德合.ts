@@ -1,6 +1,6 @@
 /** 天德合 (天德的 干合 或 支合). */
-import type { Gan, Zhi } from "../types.ts";
-import { GAN, ZHI } from "../types.ts";
+import { GAN, ZHI, type Gan, type Zhi } from "@/types";
+
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const TIAN_DE_HE: Readonly<Record<Zhi, Gan | Zhi>> = {

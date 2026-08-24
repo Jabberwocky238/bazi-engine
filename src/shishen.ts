@@ -2,9 +2,11 @@
  * 十神计算入口. 十神本身的定义按名字拆在同目录的 10 个文件里; 本文件只做
  * (a) 汇总注册表  (b) 派发函数 shishenOf  (c) 批量计算 computeShishen.
  */
-import type { Gan, Pillar, Relation, WuXing, WuXingC, Zhi, ZhiC } from "./types.ts";
-import { CANG_GAN, GAN, GanC } from "./types.ts";
-import { createTable, type Table } from "./bitmap.ts";
+import {
+    CANG_GAN, GAN, GanC,
+    type Gan, type Pillar, type Relation, type WuXing, type WuXingC, type Zhi, type ZhiC,
+} from "@/types";
+import { createTable, type Table } from "@/bitmap";
 const SHISHEN_TABLE = [
     //       甲      乙      丙      丁      戊      己      庚      辛      壬      癸
     ["比肩", "劫财", "食神", "伤官", "偏财", "正财", "七杀", "正官", "偏印", "正印"], // 甲

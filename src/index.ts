@@ -1,3 +1,4 @@
+export * from "./error.ts";
 export * from "./types.ts";
 export * from "./shensha/index.ts";
 export * from "./shishen.ts";

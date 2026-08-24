@@ -2,7 +2,7 @@
  * 血刃 (月支 → 地支).
  * 口诀: 子午丑子寅丑卯未, 辰寅巳申午卯未酉, 申辰酉戌戌巳亥亥.
  */
-import type { Zhi } from "../types.ts";
+import type { Zhi } from "@/types";
 import { pillarAt, type ShenshaCheck } from "./common.ts";
 
 const XUE_REN: Readonly<Record<Zhi, Zhi>> = {
