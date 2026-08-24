@@ -1,23 +1,6 @@
 import { GAN, GanC, WuXingC, type Gan, type WuXing } from "@/types.ts";
-import { createBitList, createTable, type Table } from "@/bitmap.ts";
+import { createBitList } from "@/bitmap.ts";
 import { popcount, slotsToMask, slotIndex, type BitHit } from "./common.ts";
-
-export type TianGanRelation = "相合" | "相冲" | "相克" | null;
-
-export const TIAN_GAN_RELATION_TABLE = [
-  [null, null, null, null, "相克", "相合", "相冲", null, null, null],
-  [null, null, null, null, null, "相克", "相合", "相冲", null, null],
-  [null, null, null, null, null, null, "相克", "相合", "相冲", null],
-  [null, null, null, null, null, null, null, "相克", "相合", "相冲"],
-  ["相克", null, null, null, null, null, null, null, "相克", "相合"],
-  ["相合", "相克", null, null, null, null, null, null, null, "相克"],
-  ["相冲", "相合", "相克", null, null, null, null, null, null, null],
-  [null, "相冲", "相合", "相克", null, null, null, null, null, null],
-  [null, null, "相冲", "相合", "相克", null, null, null, null, null],
-  [null, null, null, "相冲", "相合", "相克", null, null, null, null],
-] as const satisfies Table<TianGanRelation, [10, 10]>;
-
-export const TIAN_GAN_RELATION_TABLE_WRAPPER = createTable(TIAN_GAN_RELATION_TABLE, GAN, GAN);
 
 // ———————————————————————————————————————————————
 // 天干位表 — 10 干各占 1 bit, 一组干即一个数
