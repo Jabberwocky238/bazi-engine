@@ -1,5 +1,5 @@
-import { GAN, GanC, WuXingC, type Gan, type WuXing } from "@/types.ts";
-import { createBitList } from "@/bitmap.ts";
+import { GAN, GanC, WuXingC, type Gan, type WuXing } from "../types.ts";
+import { createBitList } from "../bitmap.ts";
 import { popcount, slotsToMask, slotIndex, type BitHit } from "./common.ts";
 
 // ———————————————————————————————————————————————

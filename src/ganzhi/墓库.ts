@@ -13,8 +13,8 @@
  *   默认:
  *     - 墓气未透 → 闭库
  */
-import { GAN, ZHI, GANZHI_BITS, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "@/types.ts";
-import { createTable, createBitList, type Table } from "@/bitmap.ts";
+import { GAN, ZHI, GANZHI_BITS, type Gan, type GanZhiMask, type WuXing, type Zhi, type Muku } from "../types.ts";
+import { createTable, createBitList, type Table } from "../bitmap.ts";
 
 // ———————————————————————————————————————————————
 // 状态类型

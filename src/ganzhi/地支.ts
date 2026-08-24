@@ -1,5 +1,5 @@
-import { ZHI, GanC, WuXingC, ZhiC, type Gan, type WuXing, type Zhi } from "@/types.ts";
-import { createBitList } from "@/bitmap.ts";
+import { ZHI, GanC, WuXingC, ZhiC, type Gan, type WuXing, type Zhi } from "../types.ts";
+import { createBitList } from "../bitmap.ts";
 import {
   popcount, slotsToMask, slotIndex, inferBitHits,
   type BitHit,

@@ -84,7 +84,9 @@ function main(): number {
     total++;
 
     const day = sample.input.day;
-    const targets = [sample.input.year, sample.input.month, sample.input.day, sample.input.hour];
+    // hour 在 BaziInput 上可选, 但 iterSamples 只产出四柱齐全的样本.
+    const targets = [sample.input.year, sample.input.month, sample.input.day, sample.input.hour]
+      .filter((p): p is NonNullable<typeof p> => p !== undefined);
     let perPillar: ReturnType<typeof computeShishen>[];
     try { perPillar = targets.map(t => computeShishen(day, t)); }
     catch (e) {

@@ -16,7 +16,7 @@
  *
  * 一个岁运柱对一条关系最多产生一条记录: 逐成员试, 首个命中即止 (同旧实现的 break).
  */
-import { GanC, ZhiC, type Gan, type Zhi } from "@/types.ts";
+import { GanC, ZhiC, type Gan, type Zhi } from "../types.ts";
 import { XPCHC, HeHuiC, zhiMask, type DiZhiHit, type DiZhiRelKind, type ZhiMask } from "./地支.ts";
 import { TianGanC, type TianGanHit } from "./天干.ts";
 import type { ExtraPillar, PillarType } from "./common.ts";

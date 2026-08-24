@@ -1,63 +1,81 @@
 /**
  * 合冲刑害入口 + 两支/两干 pairwise 查表.
  *
- *   : 天干五合 · 天干相冲 · 天干相克
- *   : 地支六合 · 地支三合 · 地支三会 · 地支暗合
- *         地支相刑 · 地支相冲 · 地支相破 · 地支相害
- *   : 盖头 · 截脚 · 覆载 (单柱内天干地支作用)
+ *   天干: 相合 (五合) · 相冲 · 相克            → 天干.ts / TianGanDetector
+ *   地支: 六合 · 三合 · 三会 · 暗合
+ *         相刑 · 相冲 · 相破 · 相害            → 地支.ts / DiZhiDetector
+ *   整柱: 盖头 · 截脚 · 覆载 (单柱内干支作用)  → 整柱.ts
+ *   岁运: 引化 / 冲克 / 冲开                   → 岁运引化.ts
  *
- * 统一签名: detector.detect(pillars, extras) → Finding[].
- *   - pillars: 原局四主柱.
- *   - extras: 岁运柱 (大运 / 流年 / 流月 等); 不需要时传 [] 或省略.
+ * 天干.ts / 地支.ts 只管原局的掩码判定, 不含岁运概念; 岁运作用由 岁运引化.ts
+ * 在其输出之上叠加. 本层只负责调度 + 聚合, 不自维任何关系表.
  *
- * extras 引化 / 冲克 / 冲开 已由各 detector 内部直接挂在 Finding 上 (dissolved /
- * impacted / opened), 此层只负责调度 + 聚合, 不做后处理。
- *
- * pairwise (pairwiseZhi / pairwiseGan) 不再自维表, 而是构造含两支/两干的
- * 四柱后委托对应 detector 判定 —— detector 是唯一事实源, 不再有会漂移的影子表.
- *   - 地支判断不需天干, 凑柱时随便填干即可.
- *   - 半三会 已废弃 (三会 detector 仅对 首+末 输出拱会, 不产半会; pairwise 同步不产).
+ * pairwise (pairwiseZhi / pairwiseGan) 同样委托 XPCHC / HeHuiC / TianGanC 查表 ——
+ * 掩码即身份, 一次 map 命中即得, 不再构造凑柱跑 detector.
+ *   - 半三会 已废弃 (三会 仅 首+末 出拱会, 不产半会; pairwise 同步不产).
+ *   - 暗合 与 半三合 / 六合 多义时无统一优先级, pairwise 不含暗合.
  */
-import type { Gan, Pillar, Zhi } from "../types.ts";
-import { ZHI } from "../types.ts";
+import { GanC, ZhiC, type Gan, type Pillar, type Zhi } from "../types.ts";
 import type { ExtraPillar } from "./common.ts";
+import {
+  DiZhiDetector, HeHuiC, XPCHC, zhiMask,
+  type DiZhiHit, type DiZhiRelKind, type HeHuiSubset,
+} from "./地支.ts";
+import { TianGanC, TianGanDetector, type TianGanHit, type ZhengHeHit } from "./天干.ts";
+import {
+  SuiYunC, 叠加地支岁运, 叠加天干岁运,
+  type SuiYunHit,
+} from "./岁运引化.ts";
+import { detect as detectWholePillar, type WholePillarR } from "./整柱.ts";
 
 export * from "./common.ts";
 export * from "./天干.ts";
 export * from "./地支.ts";
+export * from "./岁运引化.ts";
+export * from "./整柱.ts";
 
-// --- 天干 ---------------------------------------------------------------
-import { 天干五合, type TianGanWuHeFinding, type WuHeFinding } from "./天干五合.ts";
-import { 天干相冲, type TianGanChongFinding } from "./天干相冲.ts";
-import { 天干相克, type TianGanKeFinding } from "./天干相克.ts";
+// ———————————————————————————————————————————————
+// 汇总分析
+// ———————————————————————————————————————————————
 
-// --- 地支 ---------------------------------------------------------------
-import { 地支六合, type LiuHeFinding } from "./地支六合.ts";
-import { 地支三合, type SanHeFinding } from "./地支三合.ts";
-import { 地支三会, type SanHuiFinding } from "./地支三会.ts";
-import { 地支暗合, type AnHeFinding } from "./地支暗合.ts";
-import { 地支相刑, type XingFinding } from "./地支相刑.ts";
-import { 地支相冲, type ChongFinding } from "./地支相冲.ts";
-import { 地支相破, type PoFinding } from "./地支相破.ts";
-import { 地支相害, type HaiFinding } from "./地支相害.ts";
+/** 一柱的整柱作用 (盖头 / 截脚 / 覆载三态). */
+export interface WholePillarHit {
+  /** 柱下标 (0=年 1=月 2=日 3=时). */
+  readonly slot: number;
+  readonly state: WholePillarR;
+}
 
-// --- 整柱 ---------------------------------------------------------------
-import { detect as detectWholePillar } from "./盖头截脚覆载.ts";
-
+/**
+ * 干支关系全量分析.
+ *
+ * 原局 四柱 + 岁运柱 一并送入 detector (岁运柱接在四柱之后, 故其下标为 4,5,...),
+ * 这样跨原局与岁运的关系 (如流年支与月支相冲) 也能被判出;
+ * 每条关系再由 岁运引化 标注是否被岁运 引化 / 冲克.
+ */
 export interface GanZhiAnalysis {
-  // 合类 (含五合子态 争合/妒合)
-  天干五合: TianGanWuHeFinding[];
-  地支六合: LiuHeFinding[];
-  地支三合: SanHeFinding[];
-  地支三会: SanHuiFinding[];
-  地支暗合: AnHeFinding[];
-  // 冲克刑害破类
-  天干相冲: TianGanChongFinding[];
-  天干相克: TianGanKeFinding[];
-  地支相冲: ChongFinding[];
-  地支相刑: XingFinding[];
-  地支相破: PoFinding[];
-  地支相害: HaiFinding[];
+  /** 天干关系 (相合 / 相冲 / 相克), 各带岁运作用. */
+  readonly 天干: readonly SuiYunHit<TianGanHit>[];
+  /** 地支关系 (八类), 各带岁运作用. */
+  readonly 地支: readonly SuiYunHit<DiZhiHit>[];
+  /** 三合/三会 的两支子集 (半合 / 拱合 / 拱会). */
+  readonly 子集: readonly { readonly sub: string; readonly name: string; readonly slots: readonly number[] }[];
+  /** 争合 (五合一方重出). */
+  readonly 争合: readonly ZhengHeHit[];
+  /** 各柱的整柱作用 (仅原局四柱). */
+  readonly 整柱: readonly WholePillarHit[];
+}
+
+/** 送入 detector 的干支序列 —— 原局四柱在前, 岁运柱依次接后. */
+function seq(pillars: readonly Pillar[], extras: readonly ExtraPillar[]) {
+  const gans = [
+    ...pillars.map((p) => GanC.from(p.gan)),
+    ...extras.map((e) => GanC.from(e.gan)),
+  ];
+  const zhis = [
+    ...pillars.map((p) => ZhiC.from(p.zhi)),
+    ...extras.map((e) => ZhiC.from(e.zhi)),
+  ];
+  return { gans, zhis };
 }
 
 export function analyzeGanZhi(
@@ -65,137 +83,80 @@ export function analyzeGanZhi(
   extras: ExtraPillar[] = [],
 ): GanZhiAnalysis | null {
   if (pillars.length !== 4) return null;
+  const { gans, zhis } = seq(pillars, extras);
+  const suiyun = extras.map(SuiYunC.fromExtra);
+
+  const tg = TianGanDetector.detect(gans);
+  const dz = DiZhiDetector.detect(zhis);
+
   return {
-    天干五合: 天干五合.detect(pillars, extras),
-    天干相冲: 天干相冲.detect(pillars, extras),
-    天干相克: 天干相克.detect(pillars, extras),
-    地支六合: 地支六合.detect(pillars, extras),
-    地支三合: 地支三合.detect(pillars, extras),
-    地支三会: 地支三会.detect(pillars, extras),
-    地支暗合: 地支暗合.detect(pillars, extras),
-    地支相刑: 地支相刑.detect(pillars, extras),
-    地支相冲: 地支相冲.detect(pillars, extras),
-    地支相破: 地支相破.detect(pillars, extras),
-    地支相害: 地支相害.detect(pillars, extras),
+    天干: 叠加天干岁运(tg.hits, suiyun),
+    地支: 叠加地支岁运(dz.hits, suiyun),
+    子集: dz.subsets.map(({ sub, name, slots }) => ({ sub, name, slots })),
+    争合: tg.zhenghe,
+    整柱: pillars.map((p, slot) => ({ slot, state: detectWholePillar(p) })),
   };
 }
 
 // ———————————————————————————————————————————————
-// pairwise — 两支/两干关系查表 (委托 detector, 返回 detector 的 finding)
+// pairwise — 两支/两干关系查表
 // ———————————————————————————————————————————————
-// detector 是唯一事实源, 此处不维影子表:
-//   - 寅午 在 半三合 中跳过 (三合.detect 内部 BANHE_SKIP), 委托后自动一致.
-//   - 半三会 已废弃 (三会.detect 不产半会).
-//   - 暗合 由 地支暗合.detect 处理 (与 半三合 / 六合 多义时无统一优先级), pairwise 不含.
-// 返回值即 detector 产出的结构化 finding (各 detector 的输出类型), 无 PairResult 包装.
+// 掩码即身份, 故直接查 XPCHC / HeHuiC / TianGanC 的 map, 不构造凑柱跑 detector.
 
-/** 地支六冲对. */
-export const CHONG_PAIR: Readonly<Record<Zhi, Zhi>> = {
-  子: "午", 午: "子",
-  卯: "酉", 酉: "卯",
-  寅: "申", 申: "寅",
-  巳: "亥", 亥: "巳",
-  辰: "戌", 戌: "辰",
-  丑: "未", 未: "丑",
-};
-
-/** 找一个与 a,b 均不同的占位支 (取 ZHI 中首个可用者). */
-function pickFiller(a: Zhi, b: Zhi): Zhi {
-  return ZHI.find((z) => z !== a && z !== b) ?? "子";
+/** 两支查表的结果 —— 命中的关系 (整局或子集). */
+export interface PairZhi {
+  /** 八类之一; 子集命中时为其所属 triple 的类 (三合 / 三会). */
+  readonly kind: DiZhiRelKind;
+  /** 全名 ("子午相冲" / "申子半合水局"). */
+  readonly name: string;
+  /** 子集名目 (半合 / 拱合 / 拱会); 整局命中时无. */
+  readonly sub?: string;
+  readonly rule: XPCHC | HeHuiC;
 }
-
-/**
- * 构造含两支 a,b 的四柱 (地支判断不需天干, 干随便填).
- * a 放位 0, b 放位 1; 位 2/3 用与 a,b 都不同的占位支, 避免占位支参与关系干扰.
- * a==b 时位 0/1 同支 —— 供 地支相刑 产出 自刑 (slots [0,1]).
- */
-function zhiPillars(a: Zhi, b: Zhi): Pillar[] {
-  const f = pickFiller(a, b);
-  return [
-    { gan: "甲", zhi: a },
-    { gan: "甲", zhi: b },
-    { gan: "甲", zhi: f },
-    { gan: "甲", zhi: f },
-  ];
-}
-
-/** finding 的 slots 是否恰为 {0,1} (即同时落在 a 位与 b 位). */
-function hits01(f: { slots: readonly number[] }): boolean {
-  const s = f.slots;
-  return s.length === 2 && s.includes(0) && s.includes(1);
-}
-
-/** pairwiseZhi 可能返回的 finding 联合 (各 detector 输出类型). */
-export type PairwiseZhi =
-  | LiuHeFinding | ChongFinding | HaiFinding | PoFinding
-  | XingFinding | SanHeFinding;
 
 /**
  * 两支查表. 优先级 (与既有前端 extras 实现保持兼容):
- *   自刑 → 六合 → 六冲 → 六害 → 六破 → 子卯刑 → 三刑 → 半三合/拱合.
- * 半三会已废弃. 找不到任何一类返回 null.
- *
- * 实现委托各 detector: 构造含 a,b 的四柱后调 detector, 找出 slots 恰为 {0,1} 的 finding.
- * 自刑 (a==b 且属自刑支) 由 地支相刑.detect 在 [a,a,...] 上产出 ZiXingInfo (slots [0,1]),
- * 经相刑分支 (state "相刑" | "自刑") 返回 —— 无需自维自刑支表.
+ *   六合 → 六冲 → 六害 → 六破 → 刑 (子卯/三刑子集/自刑) → 半三合/拱合.
+ * 半三会 与 暗合 不产. 找不到任何一类返回 null.
  */
-export function pairwiseZhi(a: Zhi, b: Zhi): PairwiseZhi | null {
-  const ps = zhiPillars(a, b);
+export function pairwiseZhi(a: Zhi, b: Zhi): PairZhi | null {
+  const A = ZhiC.from(a), B = ZhiC.from(b);
+  const hehui = HeHuiC.at(A, B);
+  const xpch = XPCHC.at(A, B);
+  const pick = (r: XPCHC | HeHuiC | undefined): PairZhi | undefined =>
+    r && { kind: r.kind, name: r.name, rule: r };
 
-  // 六合
-  const lh = 地支六合.detect(ps).find(hits01);
-  if (lh) return lh;
+  // 六合 → 六冲 → 六害 → 六破 → 刑
+  const first =
+    pick(hehui.find((r) => r.kind === "六合"))
+    ?? pick(xpch.find((r) => r.kind === "相冲"))
+    ?? pick(xpch.find((r) => r.kind === "相害"))
+    ?? pick(xpch.find((r) => r.kind === "相破"))
+    ?? pick(xpch.find((r) => r.kind === "相刑"));
+  if (first) return first;
 
-  // 六冲
-  const c = 地支相冲.detect(ps).find(hits01);
-  if (c) return c;
-
-  // 六害
-  const hai = 地支相害.detect(ps).find(hits01);
-  if (hai) return hai;
-
-  // 六破
-  const po = 地支相破.detect(ps).find(hits01);
-  if (po) return po;
-
-  // 相刑 (子卯 / 三刑 pair 子集 / 自刑) —— 两支条目 (slots 长度 2)
-  const xing = 地支相刑.detect(ps).find((f) =>
-    (f.state === "相刑" || f.state === "自刑") && hits01(f));
-  if (xing) return xing;
-
-  // 半三合 / 拱合 (同三合组的两支; 寅午由 detector 跳过)
-  const sh = 地支三合.detect(ps).find((f) =>
-    (f.sub === "半合" || f.sub === "拱合") && hits01(f));
-  if (sh) return sh;
-
+  // 半三合 / 拱合 —— 同三合组的两支 (三合的 pair 子集)
+  const pair = zhiMask([A, B]);
+  for (const rule of HeHuiC.三合) {
+    const sub = rule.subsets().find((s: HeHuiSubset) => s.mask === pair);
+    if (sub) return { kind: rule.kind, name: sub.name, sub: sub.sub, rule };
+  }
   return null;
 }
 
-/** 构造含两干 a,b 的四柱 (凑柱地支随便填). a 放位 0, b 放位 1. */
-function ganPillars(a: Gan, b: Gan): Pillar[] {
-  return [
-    { gan: a, zhi: "子" },
-    { gan: b, zhi: "子" },
-    { gan: "甲", zhi: "子" },
-    { gan: "甲", zhi: "子" },
-  ];
+/** 两干查表的结果. */
+export interface PairGan {
+  readonly kind: "相合" | "相克";
+  readonly name: string;
+  readonly rule: TianGanC;
 }
 
-/** pairwiseGan 可能返回的 finding 联合. */
-export type PairwiseGan = WuHeFinding | TianGanKeFinding;
-
-/** 两干查表. 五合 优先, 其次 相克 (单向), 同五行 / 我生 / 我泄 不返回.
- *  委托 天干五合 / 天干相克 detector, 返回其 finding. */
-export function pairwiseGan(a: Gan, b: Gan): PairwiseGan | null {
-  const ps = ganPillars(a, b);
-
-  // 天干五合
-  const he = 天干五合.detect(ps).find((f) => f.kind === "天干五合" && hits01(f));
-  if (he && he.kind === "天干五合") return he;
-
-  // 天干相克
-  const ke = 天干相克.detect(ps).find((f) => f.kind === "天干相克" && hits01(f));
-  if (ke && ke.kind === "天干相克") return ke;
-
+/** 两干查表. 相合 优先, 其次 相克 (单向). 同五行 / 我生 / 我泄 不返回. */
+export function pairwiseGan(a: Gan, b: Gan): PairGan | null {
+  const rules = TianGanC.at(GanC.from(a), GanC.from(b));
+  const he = rules.find((r) => r.kind === "相合");
+  if (he) return { kind: "相合", name: he.name, rule: he };
+  const ke = rules.find((r) => r.kind === "相克");
+  if (ke) return { kind: "相克", name: ke.name, rule: ke };
   return null;
 }

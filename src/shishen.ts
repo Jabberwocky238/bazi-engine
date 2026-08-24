@@ -2,9 +2,9 @@
  * 十神计算入口. 十神本身的定义按名字拆在同目录的 10 个文件里; 本文件只做
  * (a) 汇总注册表  (b) 派发函数 shishenOf  (c) 批量计算 computeShishen.
  */
-import type { Gan, GanC, Pillar, Relation, WuXing, WuXingC, Zhi, ZhiC } from "./types.ts";
-import { CANG_GAN, GAN } from "@/types.ts";
-import { createTable, type Table } from "@/bitmap.ts";
+import type { Gan, Pillar, Relation, WuXing, WuXingC, Zhi, ZhiC } from "./types.ts";
+import { CANG_GAN, GAN, GanC } from "./types.ts";
+import { createTable, type Table } from "./bitmap.ts";
 const SHISHEN_TABLE = [
     //       甲      乙      丙      丁      戊      己      庚      辛      壬      癸
     ["比肩", "劫财", "食神", "伤官", "偏财", "正财", "七杀", "正官", "偏印", "正印"], // 甲
@@ -134,4 +134,29 @@ export function shishenZhi(day: GanC, targetZhi: ZhiC): ShishenC[] {
 /** 日主 `day` 之某十神所属五行. (原 GanC.shishenWuxing.) */
 export function shishenWuxing(day: GanC, targetShishen: ShishenC): WuXingC {
     return day.wuxing.relationFrom(targetShishen.cat.relation);
+}
+
+/** 一柱的十神结果 —— 日主柱的 十神 记 "日主". */
+export interface PillarShishen {
+    /** 该柱天干的十神; 日主柱为 "日主". */
+    十神: Shishen | "日主";
+    /** 该柱地支藏干. */
+    藏干: Gan[];
+    /** 各藏干对应的十神 (与 藏干 同序). */
+    藏干十神: Shishen[];
+}
+
+/**
+ * 一柱相对日主 `day` 的十神 —— 天干十神 + 地支藏干及其十神.
+ * `target` 即日主柱时 十神 记 "日主" (日主自身不论十神).
+ */
+export function computeShishen(day: Pillar, target: Pillar): PillarShishen {
+    const dayGan = GanC.from(day.gan);
+    const isRizhu = target === day;
+    const canggan = CANG_GAN[target.zhi];
+    return {
+        十神: isRizhu ? "日主" : shishenOf(dayGan, GanC.from(target.gan)).str,
+        藏干: [...canggan],
+        藏干十神: canggan.map((g) => shishenOf(dayGan, GanC.from(g)).str),
+    };
 }
