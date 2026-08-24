@@ -10,7 +10,7 @@ import {
   adjacent, collectGans, posRange, dissolversByGan, ganWuxing,
   type ExtraPillar, type FindingMod,
 } from "./common.ts";
-import { CONTROLS } from "../wuxing.ts";
+import { CONTROLS } from "../types.ts";
 
 // ———————————————————————————————————————————————
 // 结构化类型 — detect 返回 TianGanKeFinding[]

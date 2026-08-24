@@ -7,8 +7,6 @@
 
 import { LunarUtil } from "lunar-typescript";
 import { createTable, type Table } from "./bitmap.ts";
-import type { ShishenC } from "./shishen.ts";
-import { shishenOf } from "./shishen.ts";
 export const WUXING = ["木", "火", "土", "金", "水"] as const;
 export type WuXing = typeof WUXING[number]
 export const GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
@@ -79,8 +77,8 @@ const WUXING_RELATION_TABLE = [
     ["同类", "我生", "我克", "克我", "生我"], // 木
     ["生我", "同类", "我生", "我克", "克我"], // 火
     ["克我", "生我", "同类", "我生", "我克"], // 土
-    ["我生", "克我", "生我", "同类", "我生"], // 金
-    ["生我", "我克", "克我", "生我", "同类"], // 水
+    ["我克", "克我", "生我", "同类", "我生"], // 金
+    ["我生", "我克", "克我", "生我", "同类"], // 水
 ] as const satisfies Table<Relation, [5, 5]>;
 export const WUXING_RELATION_TABLE_WRAPPER = createTable(WUXING_RELATION_TABLE, WUXING, WUXING);
 export const RELATIONS = [
@@ -93,9 +91,9 @@ export const RELATIONS = [
 const WUXING_BY_RELATION = [
     ["木", "火", "土", "金", "水"], // 同类
     ["火", "土", "金", "水", "木"], // 我生
-    ["土", "水", "火", "金", "木"], // 我克
-    ["金", "木", "水", "火", "土"], // 克我
-    ["水", "木", "金", "土", "火"], // 生我
+    ["土", "金", "水", "木", "火"], // 我克
+    ["金", "水", "木", "火", "土"], // 克我
+    ["水", "木", "火", "土", "金"], // 生我
 ] as const satisfies Table<WuXing, [5, 5]>;
 export const WUXING_BY_RELATION_TABLE = createTable(
     WUXING_BY_RELATION,
@@ -305,15 +303,6 @@ export class GanC {
     }
     get wuxing(): WuXingC {
         return WuXingC.from(GAN_WUXING[this.str])
-    }
-    shishenGan(targetGan: GanC): ShishenC {
-        return shishenOf(this, targetGan);
-    }
-    shishenZhi(targetZhi: ZhiC): ShishenC[] {
-        return targetZhi.canggan().map(g => shishenOf(this, g));
-    }
-    shishenWuxing(targetShishen: ShishenC): WuXingC {
-        return this.wuxing.relationFrom(targetShishen.cat.relation)
     }
 }
 

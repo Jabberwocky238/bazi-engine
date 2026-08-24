@@ -26,10 +26,19 @@ type BitListT<Items extends readonly unknown[], Length extends number> = readonl
 
 class BitList<Items extends readonly PropertyKey[], BitLength extends number> {
   public constructor(public readonly items: Items, public readonly length: BitLength) {
-    if (!Number.isInteger(length) || length < 0 || length > 31 || items.length > 2 ** length) throw new RangeError("Invalid bit length");
+    if (length < 0 || length > 31 || items.length > 2 ** length) {
+      throw new RangeError("Invalid bit length");
+    }
   }
-  public decode(mask: number): BitListT<Items, Items["length"]> {
-    return Array.from({ length: this.items.length }, (_, bit) => (mask & (1 << bit)) !== 0 ? this.items[bit] : undefined) as unknown as BitListT<Items, Items["length"]>;
+  public decode(flag: number): BitListT<Items, Items["length"]> {
+    return Array.from({ length: this.items.length }, (_, bit) => (flag & (1 << bit)) !== 0 ? this.items[bit] : undefined) as unknown as BitListT<Items, Items["length"]>;
+  }
+  public encode(item: Partial<Record<Items[number], boolean>>): number {
+    let mask = 0;
+    this.items.forEach((item, bit) => {
+      if (flags[item as Items[number]]) mask |= 1 << bit;
+    });
+    return mask;
   }
 }
 

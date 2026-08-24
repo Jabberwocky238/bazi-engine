@@ -2,7 +2,7 @@
  * 十神计算入口. 十神本身的定义按名字拆在同目录的 10 个文件里; 本文件只做
  * (a) 汇总注册表  (b) 派发函数 shishenOf  (c) 批量计算 computeShishen.
  */
-import type { Gan, GanC, Pillar, Relation, WuXing, Zhi, ZhiC } from "./types.ts";
+import type { Gan, GanC, Pillar, Relation, WuXing, WuXingC, Zhi, ZhiC } from "./types.ts";
 import { CANG_GAN, GAN } from "@/types.ts";
 import { createTable, type Table } from "@/bitmap.ts";
 const SHISHEN_TABLE = [
@@ -30,8 +30,8 @@ export const SHISHEN_CAT = ["比劫", "印", "食伤", "财", "官杀"] as const
 export type ShishenCat = typeof SHISHEN_CAT[number]
 
 const SHISHEN_BY_CAT_POLARITY = [
-    ["比肩", "劫财"], // 比劫
-    ["食神", "伤官"], // 食伤
+    ["劫财", "比肩"], // 比劫
+    ["伤官", "食神"], // 食伤
     ["偏财", "正财"], // 财
     ["七杀", "正官"], // 官杀
     ["偏印", "正印"], // 印
@@ -119,4 +119,19 @@ export class ShishenCC {
  */
 export function shishenOf(day: GanC, other: GanC): ShishenC {
     return ShishenC.from(SHISHEN_TABLE_WRAPPER[day.str][other.str]);
+}
+
+/** 日主 `day` 对某天干的十神. (原 GanC.shishenGan; 移出 types.ts 以断开循环依赖.) */
+export function shishenGan(day: GanC, targetGan: GanC): ShishenC {
+    return shishenOf(day, targetGan);
+}
+
+/** 日主 `day` 对某地支各藏干的十神. (原 GanC.shishenZhi.) */
+export function shishenZhi(day: GanC, targetZhi: ZhiC): ShishenC[] {
+    return targetZhi.canggan().map(g => shishenOf(day, g));
+}
+
+/** 日主 `day` 之某十神所属五行. (原 GanC.shishenWuxing.) */
+export function shishenWuxing(day: GanC, targetShishen: ShishenC): WuXingC {
+    return day.wuxing.relationFrom(targetShishen.cat.relation);
 }

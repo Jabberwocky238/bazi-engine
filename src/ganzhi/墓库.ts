@@ -14,7 +14,7 @@
  *     - 墓气未透 → 闭库
  */
 import { GAN, ZHI, type Gan, type Pillar, type WuXing, type Zhi, type Muku } from "@/types.ts";
-import { createTable, type Table } from "@/bitmap.ts";
+import { createTable, createBitList, type Table } from "@/bitmap.ts";
 import {
   POS_NAMES, hasGan, openersByZhi,
   type ExtraPillar, type FindingMod,
@@ -34,6 +34,20 @@ export type MuKuState =
   | "天干冲开"   // 丁癸 冲开辰戌, 乙辛 冲开未丑
   | "天干合闭"   // 戊癸合辰 / 乙庚合未 / 丁壬合戌 / 丙辛合丑
   | "闭库";      // 墓气未透
+
+// ———————————————————————————————————————————————
+// 状态判定表 — 5 个触发标志各占 1 bit, 掩码作行下标
+// ———————————————————————————————————————————————
+// 位序由 MUKU_FLAG_BITS 的 items 决定; 库只决定标志怎么算 (见 detect),
+// 不影响标志组合如何定状态.
+
+/** 状态标志位 (bit0..bit4). */
+export const MUKU_FLAG_BITS = createBitList(
+  ["透墓气", "被冲", "被刑", "天干冲开", "天干合闭"] as const,
+  5,
+);
+
+MUKU_FLAG_透墓气 = MUKU_FLAG_BITS.encode("透墓气")
 
 interface KuInfo {
   readonly benqi: Gan;
@@ -146,18 +160,13 @@ function detect(pillars: Pillar[], extras: ExtraPillar[] = []): MuKuFinding[] {
       }
     }
 
-    let state: MuKuState = "静库";
-    if (touMuqi && !beingChong && !xingOpen && !tianHeClose) {
-      state = "自动开库";
-    } else if (beingChong || xingOpen) {
-      state = "冲刑开库";
-    } else if (tianChongOpen) {
-      state = "天干冲开";
-    } else if (tianHeClose) {
-      state = "天干合闭";
-    } else if (!touMuqi) {
-      state = "闭库";
-    }
+    const state = mukuState({
+      透墓气: touMuqi,
+      被冲: beingChong,
+      被刑: xingOpen,
+      天干冲开: tianChongOpen,
+      天干合闭: tianHeClose,
+    });
 
     const f: MuKuFinding = {
       kind: "墓库",
