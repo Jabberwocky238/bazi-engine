@@ -251,8 +251,10 @@ export class SolarTime {
         const RAD = Math.PI / 180;
         // 儒略日 -> 儒略世纪 (UT), 再加 ΔT 转为力学时 TT.
         const jdUt = utcMs / 86400_000 + 2440587.5;
-        const tUt = (jdUt - 2451545) / 36525;
-        const t = tUt + ShouXingUtil.dtT(tUt);
+        const daysUt = jdUt - 2451545;
+        const tUt = daysUt / 36525;
+        // dtT 入参为 J2000 起算天数, 返回值单位为天, 故除 36525 化为儒略世纪.
+        const t = tUt + ShouXingUtil.dtT(daysUt) / 36525;
 
         // 太阳视黄经 = 地球日心黄经 + 180° + 光行差 + 黄经章动.
         const nutation = ShouXingUtil.nutationLon2(t);

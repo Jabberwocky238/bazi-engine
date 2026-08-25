@@ -1,6 +1,6 @@
 {
   "name": "@jabberwocky238/bazi-engine",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -28,6 +28,7 @@
     "shishen": "bun run test/cli-shishen.ts",
     "shensha": "bun run test/cli-shensha.ts",
     "ganzhi": "bun run test/cli-ganzhi.ts",
+    "solartime": "bun run test/cli-solartime.ts",
     "clean": "rm -rf dist",
     "build": "mkdir -p dist && bun build ./src/index.ts --outdir dist --target bun && bunx tsc -p tsconfig.build.json && npx dts-bundle-generator -o dist/index.d.ts src/index.ts"
   },
